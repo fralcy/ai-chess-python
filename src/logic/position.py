@@ -1,4 +1,4 @@
-class position():
+class Position():
   def __init__(self, row, column):
     self.row = row
     self.column = column
@@ -28,3 +28,7 @@ class position():
   
   def __ne__(self, value):
     return not self == value
+  
+  def __add__(self, direction):
+    return Position(self.row + direction.row_delta,
+                    self.column + direction.column_delta)
