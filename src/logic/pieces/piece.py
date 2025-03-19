@@ -1,11 +1,11 @@
 from abc import ABC, abstractmethod
-from player import Player
-from piece_type import PieceType
+from src.logic.player import Player
+from src.logic.piece_type import PieceType
 
 class Piece(ABC):
     def __init__(self, color):
-        self.color = color
-        self.has_moved = False
+        self._color = color
+        self._has_moved = False
 
     @property
     @abstractmethod
@@ -15,6 +15,10 @@ class Piece(ABC):
     @property
     def color(self):
         return self._color
+    
+    @color.setter
+    def color(self, value):
+        self._color = value
     
     @property
     def has_moved(self):

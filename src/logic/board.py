@@ -1,6 +1,6 @@
-from player import Player
-from pieces import Pawn, Knight, Bishop, Rook, Queen, King
-from position import Position
+from logic.player import Player
+from logic.pieces import *
+from logic.position import Position
 
 class Board:
     def __init__(self):

@@ -1,6 +1,5 @@
-from piece import Piece
-from piece_type import PieceType
-from player import Player
+from logic.pieces.piece import Piece
+from logic.piece_type import PieceType
 
 class Knight(Piece):
     def __init__(self, color):
