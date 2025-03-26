@@ -43,7 +43,7 @@ class Piece(ABC):
             if board.is_empty(pos):
                 yield NormalMove(from_pos, pos)
             else:
-                piece = board[pos]
+                piece = board.get_piece(pos)
                 if piece.color != self.color:
                     yield NormalMove(from_pos, pos)
                 break

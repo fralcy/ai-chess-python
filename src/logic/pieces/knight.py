@@ -16,7 +16,7 @@ class Knight(Piece):
         copy.has_moved = self.has_moved
         return copy
     
-    def potential_to_positions(from_pos):
+    def potential_to_positions(self, from_pos):
         for vertical_dir in [Direction.NORTH, Direction.SOUTH]:
             for horizontal_dir in [Direction.EAST, Direction.WEST]:
                 yield from_pos + 2 * vertical_dir + horizontal_dir
@@ -25,7 +25,7 @@ class Knight(Piece):
     def move_positions(self, from_pos, board):
         for to_pos in self.potential_to_positions(from_pos):
             if board.is_inside(to_pos):
-                if board.is_empty(to_pos) or board[to_pos].color != self.color:
+                if board.is_empty(to_pos) or board.get_piece(to_pos).color != self.color:
                     yield NormalMove(from_pos, to_pos)
 
     def get_moves(self, from_pos, board):

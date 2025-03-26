@@ -11,6 +11,14 @@ class Direction():
   def column_delta(self):
     return self._column_delta
   
+  @row_delta.setter
+  def row_delta(self, value):
+    self._row_delta = value
+
+  @column_delta.setter
+  def column_delta(self, value):
+    self._column_delta = value
+
   def __add__(self, other):
     return Direction(self.row_delta + other.row_delta,
                       self.column_delta + other.column_delta)
@@ -22,11 +30,11 @@ class Direction():
   def __rmul__(self, scalar):
     return self.__mul__(scalar)
   
-Direction.North = Direction(-1, 0)
-Direction.South = Direction(1, 0)
-Direction.West = Direction(0, -1)
-Direction.East = Direction(0, 1)
-Direction.NorthWest = Direction.North + Direction.West
-Direction.NorthEast = Direction.North + Direction.East
-Direction.SouthWest = Direction.South + Direction.West
-Direction.SouthEast = Direction.South + Direction.East
+Direction.NORTH = Direction(-1, 0)
+Direction.SOUTH = Direction(1, 0)
+Direction.WEST = Direction(0, -1)
+Direction.EAST = Direction(0, 1)
+Direction.NORTH_WEST = Direction.NORTH + Direction.WEST
+Direction.NORTH_EAST = Direction.NORTH + Direction.EAST
+Direction.SOUTH_WEST = Direction.SOUTH + Direction.WEST
+Direction.SOUTH_EAST = Direction.SOUTH + Direction.EAST

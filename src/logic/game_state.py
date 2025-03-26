@@ -18,10 +18,10 @@ class GameState():
         self._current_player = player
     
     def legal_moves_for_piece(self, pos):
-        if self._board[pos].is_empty() or self._board[pos].player != self._current_player:
+        piece = self._board.get_piece(pos)
+        if piece is None or piece.color != self._current_player:
             return []
-        
-        piece = self._board[pos]
+
         return piece.get_moves(pos, self._board)
     
     def make_move(self, move):

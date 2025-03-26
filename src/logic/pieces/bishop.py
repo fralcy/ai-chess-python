@@ -17,7 +17,7 @@ class Bishop(Piece):
     
     @property
     def directions(self):
-        return [Direction.NorthWest, Direction.NorthEast, Direction.SouthWest, Direction.SouthEast]
+        return [Direction.NORTH_WEST, Direction.NORTH_EAST, Direction.SOUTH_WEST, Direction.SOUTH_EAST]
     
     def get_moves(self, from_pos, board):
         for direction in self.directions:

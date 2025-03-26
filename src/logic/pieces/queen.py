@@ -17,8 +17,8 @@ class Queen(Piece):
     
     @property
     def directions(self):
-        return [Direction.North, Direction.NorthEast, Direction.East, Direction.SouthEast,
-                 Direction.South, Direction.SouthWest, Direction.West, Direction.NorthWest]
+        return [Direction.NORTH, Direction.NORTH_EAST, Direction.EAST, Direction.SOUTH_EAST,
+            Direction.SOUTH, Direction.SOUTH_WEST, Direction.WEST, Direction.NORTH_WEST]
     
     def get_moves(self, from_pos, board):
         for direction in self.directions:

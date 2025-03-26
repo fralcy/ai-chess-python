@@ -17,7 +17,7 @@ class Rook(Piece):
     
     @property
     def directions(self):
-        return [Direction.North, Direction.East, Direction.South, Direction.West]
+        return [Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST]
     
     def get_moves(self, from_pos, board):
         for direction in self.directions:

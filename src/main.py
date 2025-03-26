@@ -41,6 +41,9 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if event.button == 1:  # Left mouse button
+                    chess_board.handle_click(event.pos)
             
         # Fill the screen with a background color
         screen.fill((0, 0, 0))

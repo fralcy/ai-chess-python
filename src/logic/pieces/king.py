@@ -24,7 +24,7 @@ class King(Piece):
     def move_positions(self, from_pos, board):
         for direction in self.directions:
             pos = from_pos + direction
-            if board.is_inside(pos) and (board.is_empty(pos) or board[pos].color != self.color):
+            if board.is_inside(pos) and (board.is_empty(pos) or board.get_piece(pos).color != self.color):
                 yield pos
 
     def get_moves(self, from_pos, board):

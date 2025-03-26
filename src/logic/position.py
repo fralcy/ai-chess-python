@@ -11,6 +11,14 @@ class Position():
   def column(self):
     return self._column
   
+  @row.setter
+  def row(self, value):
+    self._row = value
+
+  @column.setter
+  def column(self, value):
+    self._column = value
+  
   def square_color(self):
     """Return the color of the square."""
     from logic.player import Player
