@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
-from src.logic.player import Player
-from src.logic.piece_type import PieceType
+from src.logic.moves.move import Move
+from typing import List
 
 class Piece(ABC):
     def __init__(self, color):
@@ -31,3 +31,23 @@ class Piece(ABC):
     @abstractmethod
     def copy(self):
         pass
+
+    @abstractmethod
+    def get_moves(self, from_pos, board) -> List["Move"]:
+        pass
+
+    def move_positions_in_dir(self, from_pos, board, direction):
+        pos = from_pos + direction
+        while board.is_inside(pos):
+            if board.is_empty(pos):
+                yield pos
+            else:
+                piece = board[pos]
+                if piece.color != self.color:
+                    yield pos
+                break
+            pos += direction 
+
+    def move_positions_in_dirs(self, from_pos, board, directions):
+        for direction in directions:
+            yield from self.move_positions_in_dir(from_pos, board, direction)

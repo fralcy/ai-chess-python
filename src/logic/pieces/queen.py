@@ -1,5 +1,6 @@
 from logic.pieces.piece import Piece
 from logic.piece_type import PieceType
+from logic.direction import Direction
 
 class Queen(Piece):
     def __init__(self, color):
@@ -13,3 +14,12 @@ class Queen(Piece):
         copy = Queen(self.color)
         copy.has_moved = self.has_moved
         return copy
+    
+    @property
+    def directions(self):
+        return [Direction.North, Direction.NorthEast, Direction.East, Direction.SouthEast,
+                 Direction.South, Direction.SouthWest, Direction.West, Direction.NorthWest]
+    
+    def get_moves(self, from_pos, board):
+        for direction in self.directions:
+            yield from self.move_positions_in_dir(from_pos, board, direction)
