@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
-from src.logic.moves.move import Move
+from logic.moves.move import Move
+from logic.moves.normal_move import NormalMove
 from typing import List
 
 class Piece(ABC):
@@ -40,11 +41,11 @@ class Piece(ABC):
         pos = from_pos + direction
         while board.is_inside(pos):
             if board.is_empty(pos):
-                yield pos
+                yield NormalMove(from_pos, pos)
             else:
                 piece = board[pos]
                 if piece.color != self.color:
-                    yield pos
+                    yield NormalMove(from_pos, pos)
                 break
             pos += direction 
 
