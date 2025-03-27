@@ -1,11 +1,12 @@
 from logic.pieces.piece import Piece
+from logic.player import Player
 from logic.result import Result
-
+from logic.end_reason import EndReason
 class GameState():
     def __init__(self, board, current_player):
         self._board = board
         self._current_player = current_player
-        self._result = Result(None, None)
+        self._result = None
     
     @property
     def board(self):
@@ -55,11 +56,11 @@ class GameState():
         return all_moves
     
     def check_for_game_over(self):
-        if len(self.all_legal_moves_for(self._current_player)) == 0 or len(self.all_legal_moves_for(self._current_player.opponent())) == 0:
+        if len(self.all_legal_moves_for(self._current_player)) == 0:
             if self._board.is_in_check(self._current_player):
-                self._result = self.result.__win__(self._current_player.opponent())
+                self._result = Result(self._current_player.opponent(), EndReason.CHECKMATE)
             else:
-                self._result = self.result.__draw__()
+                self._result = Result(Player.NONE, EndReason.STALEMATE)
 
     def is_game_over(self):
         return self._result is not None

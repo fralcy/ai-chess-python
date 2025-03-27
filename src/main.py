@@ -6,6 +6,9 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from ui.chess_board import ChessBoard
+from ui.game_over_menu import GameOverMenu  # Import the new GameOverMenu class
+from logic.player import Player
+from logic.end_reason import EndReason
 
 def ensure_assets_directory():
     """Ensure the assets directory exists for the chess piece images."""
@@ -32,6 +35,9 @@ def main():
     # Create chess board
     chess_board = ChessBoard(screen)
     
+    # Create game over menu (initially with no values)
+    game_over_menu = None
+    
     # Main game loop
     clock = pygame.time.Clock()
     running = True
@@ -43,13 +49,23 @@ def main():
                 running = False
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:  # Left mouse button
-                    chess_board.handle_click(event.pos)
+                    if game_over_menu is None:  # Only handle board clicks if game is not over
+                        chess_board.handle_click(event.pos)
             
         # Fill the screen with a background color
         screen.fill((0, 0, 0))
         
         # Draw the chess board and pieces
         chess_board.draw()
+        
+        # Check if game has ended
+        if chess_board.game_state.is_game_over() and game_over_menu is None:
+            result = chess_board.game_state.result
+            game_over_menu = GameOverMenu(screen, result.winner, result.end_reason)
+        
+        # Draw game over menu if game has ended
+        if game_over_menu is not None:
+            game_over_menu.draw()
         
         # Update the display
         pygame.display.flip()
