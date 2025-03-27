@@ -1,6 +1,7 @@
 from logic.player import Player
 from logic.pieces import *
 from logic.position import Position
+from logic.piece_type import PieceType
 
 class Board:
     def __init__(self):
@@ -51,3 +52,45 @@ class Board:
     
     def is_empty(self, pos: Position):
         return self.get_piece(pos) is None
+    
+    def piece_positions(self):
+        positions = []
+        for row in range(8):
+            for col in range(8):
+                piece = self._pieces[row][col]
+                if piece:
+                    positions.append(Position(row, col))
+        return positions
+    
+    def piece_positions_for(self, player):
+        positions = []
+        for row in range(8):
+            for col in range(8):
+                piece = self._pieces[row][col]
+                if piece and piece.color == player:
+                    positions.append(Position(row, col))
+        return positions
+    
+    def is_in_check(self, player):        
+        # Check if any opponent piece can capture the king
+        opponent = player.opponent()
+        for pos in self.piece_positions_for(opponent):
+            piece = self.get_piece(pos)
+            if piece.can_capture_opponent_king(pos, self):
+                return True
+        
+        return False
+    
+    def copy(self):
+        board_copy = Board()
+        # Clear the default pieces
+        board_copy._pieces = [[None for _ in range(8)] for _ in range(8)]
+        
+        # Copy each piece
+        for row in range(8):
+            for col in range(8):
+                piece = self._pieces[row][col]
+                if piece:
+                    board_copy._pieces[row][col] = piece.copy()
+        
+        return board_copy

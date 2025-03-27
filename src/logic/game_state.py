@@ -22,7 +22,16 @@ class GameState():
         if piece is None or piece.color != self._current_player:
             return []
 
-        return piece.get_moves(pos, self._board)
+        # Get all possible moves
+        all_moves = list(piece.get_moves(pos, self._board))
+        
+        # Filter out moves that would leave the player in check
+        legal_moves = []
+        for move in all_moves:
+            if move.is_legal(self._board, self._current_player):
+                legal_moves.append(move)
+                
+        return legal_moves
     
     def make_move(self, move):
         move.execute(self._board)

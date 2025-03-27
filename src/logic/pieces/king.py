@@ -21,6 +21,15 @@ class King(Piece):
         return [Direction.NORTH, Direction.SOUTH, Direction.WEST, Direction.EAST, 
                 Direction.NORTH_WEST, Direction.NORTH_EAST, Direction.SOUTH_WEST, Direction.SOUTH_EAST]
     
+    def can_capture_opponent_king(self, from_pos, board):
+        for direction in self.directions:
+            to_pos = from_pos + direction
+            if board.is_inside(to_pos):
+                piece = board.get_piece(to_pos)
+                if piece and piece.piece_type == PieceType.KING and piece.color != self.color:
+                    return True
+        return False
+    
     def move_positions(self, from_pos, board):
         for direction in self.directions:
             pos = from_pos + direction

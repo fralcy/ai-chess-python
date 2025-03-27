@@ -27,11 +27,20 @@ class Pawn(Piece):
     def can_capture_at(self, pos, board):
         return board.is_inside(pos) and not board.is_empty(pos) and board.get_piece(pos).color != self.color
     
+    def can_capture_opponent_king(self, from_pos, board):
+        for direction in [Direction.WEST, Direction.EAST]:
+            to_pos = from_pos + self.forward + direction
+            if board.is_inside(to_pos):
+                piece = board.get_piece(to_pos)
+                if piece and piece.piece_type == PieceType.KING and piece.color != self.color:
+                    return True
+        return False
+    
     def forward_moves(self, from_pos, board):
         one_move_pos = from_pos + self.forward
 
         if self.can_move_to(one_move_pos, board):
-            yield NormalMove(from_pos,one_move_pos)
+            yield NormalMove(from_pos, one_move_pos)
 
             two_move_pos = one_move_pos + self.forward
             if not self.has_moved and self.can_move_to(two_move_pos, board):
