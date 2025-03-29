@@ -1,7 +1,7 @@
 import pygame
 import sys
 import os
-
+from src.logic.game_state import GameState
 # Add parent directory to path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -15,7 +15,7 @@ class GameOverMenu:
     BUTTON_HOVER_COLOR = (100, 149, 237)  # Cornflower blue
     BUTTON_TEXT_COLOR = (255, 255, 255)  # White
     
-    def __init__(self, screen, winner, reason):
+    def __init__(self, screen, game_state: GameState):
         """Initialize the game over menu.
         
         Args:
@@ -24,8 +24,8 @@ class GameOverMenu:
             reason: The reason the game ended (EndReason enum)
         """
         self.screen = screen
-        self.winner = winner
-        self.reason = reason
+        self.winner = game_state.result.winner
+        self.reason = game_state.result.end_reason
         self.screen_width = screen.get_width()
         self.screen_height = screen.get_height()
         
@@ -153,3 +153,52 @@ class GameOverMenu:
         exit_text = self.button_font.render("Exit", True, self.BUTTON_TEXT_COLOR)
         exit_text_rect = exit_text.get_rect(center=self.exit_button.center)
         self.screen.blit(exit_text, exit_text_rect)
+
+    def handle_restart_click(self, event):
+        """Handle clicks on the replay button."""
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            if self.replay_button.collidepoint(event.pos):
+                return True
+        return False
+    
+    def handle_exit_click(self, event):
+        """Handle clicks on the exit button."""
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            if self.exit_button.collidepoint(event.pos):
+                return True
+        return False
+    
+    def get_winner_text(self):
+        from src.logic.player import Player
+        if self.winner == Player.WHITE:
+            return "White wins!"
+        elif self.winner == Player.BLACK:
+            return "Black wins!"
+        else:
+            return "It's a draw!"
+        
+    def player_string(self, player):
+        from src.logic.player import Player
+        if player == Player.WHITE:
+            return "White"
+        elif player == Player.BLACK:
+            return "Black"
+        else:
+            return "Unknown"
+        
+    def get_reason_text(self, end_reason, current_player):
+        from src.logic.end_reason import EndReason
+        from src.logic.player import Player
+        match end_reason:
+            case EndReason.Stalemate:
+                return f"STALEMATE = {self.player_string(current_player)} CAN'T MOVE"
+            case EndReason.Checkmate:
+                return f"CHECKMATE = {self.player_string(current_player)} CAN'T MOVE"
+            case EndReason.FiftyMoveRule:
+                return "FIFTY-MOVE RULE"
+            case EndReason.InsufficientMaterial:
+                return "INSUFFICIENT MATERIAL"
+            case EndReason.ThreefoldRepetition:
+                return "THREEFOLD REPETITION"
+            case _:
+                return ""
