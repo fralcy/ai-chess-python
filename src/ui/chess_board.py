@@ -10,6 +10,7 @@ from logic.player import Player
 from logic.piece_type import PieceType
 from logic.position import Position
 from logic.game_state import GameState
+from logic.move_type import MoveType
 from ui.promotion_menu import PromotionMenu  # Import PromotionMenu
 
 class ChessBoard:
@@ -131,18 +132,36 @@ class ChessBoard:
     
     def handle_click(self, pos):
         """Handle mouse click on the board."""
+        # Import MoveType if it's not already imported at the top
+        from logic.move_type import MoveType
+        
         if self.promotion_menu:  # Handle promotion menu clicks
-            selected_piece_type = self.promotion_menu.handle_click(pos)
+            selected_piece_type = self.promotion_menu.handle_click(pygame.event.Event(pygame.MOUSEBUTTONDOWN, {'pos': pos, 'button': 1}))
             if selected_piece_type:
-                # Perform the promotion
+                # Find the promotion move from possible moves
                 promotion_move = next(
-                    move for move in self.possible_moves
-                    if (move.type == MoveType.PAWN_PROMOTION)
+                    (move for move in self.possible_moves 
+                    if move.type == MoveType.PAWN_PROMOTION),
+                    None
                 )
-                promotion_move._new_type = selected_piece_type  # Update the promotion type
-                self.game_state.make_move(promotion_move)
-                self.promotion_menu = None  # Close the promotion menu
-            return
+                
+                if promotion_move:
+                    # Create a new promotion move with the selected piece type
+                    from logic.moves.pawn_promotion import PawnPromotion
+                    updated_move = PawnPromotion(
+                        promotion_move.from_pos,
+                        promotion_move.to_pos,
+                        selected_piece_type
+                    )
+                    
+                    # Execute the promotion move
+                    self.game_state.make_move(updated_move)
+                    
+                    # Reset selection state
+                    self.selected_pos = None
+                    self.possible_moves = []
+                    self.promotion_menu = None  # Close the promotion menu
+                return
 
         col = pos[0] // self.SQUARE_SIZE
         row = pos[1] // self.SQUARE_SIZE
