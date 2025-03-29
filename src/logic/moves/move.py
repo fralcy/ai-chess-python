@@ -20,7 +20,10 @@ class Move(ABC):
     def execute(self, board):
         pass
     
-    def is_legal(self, board, player):
+    def is_legal(self, board):
+        # Get the player color from the piece at the from_pos
+        player = board.get_piece(self.from_pos).color
+
         # Make a copy of the board to simulate the move
         board_copy = board.copy()
         

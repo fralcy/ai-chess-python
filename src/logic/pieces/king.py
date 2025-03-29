@@ -1,7 +1,9 @@
 from logic.pieces.piece import Piece
 from logic.piece_type import PieceType
 from logic.direction import Direction
+from logic.move_type import MoveType
 from logic.moves.normal_move import NormalMove
+from logic.moves.castle import Castle
 
 class King(Piece):
     def __init__(self, color):
@@ -10,6 +12,49 @@ class King(Piece):
     @property
     def piece_type(self):
         return PieceType.KING
+    
+    @staticmethod
+    def is_unmoved_rook(pos, board):
+        if board.is_empty(pos):
+            return False
+        
+        piece = board.get_piece(pos)
+        return piece.piece_type == PieceType.ROOK and piece.color == board.get_piece(pos).color and not piece.has_moved
+    
+    @staticmethod
+    def all_empty(positions, board):
+        for pos in positions:
+            if not board.is_empty(pos):
+                return False
+        return True
+    
+    def can_castle_ks(self, from_pos, board):
+        if self.has_moved:
+            return False
+        
+        rook_pos = from_pos + Direction.EAST * 3
+        if not self.is_unmoved_rook(rook_pos, board):
+            return False
+        
+        positions = [from_pos + Direction.EAST, from_pos + Direction.EAST * 2]
+        if not self.all_empty(positions, board):
+            return False
+        
+        return True
+
+    def can_castle_qs(self, from_pos, board):
+        if self.has_moved:
+            return False
+        
+        rook_pos = from_pos + Direction.WEST * 4
+        if not self.is_unmoved_rook(rook_pos, board):
+            return False
+        
+        positions = [from_pos + Direction.WEST, from_pos + Direction.WEST * 2, from_pos + Direction.WEST * 3]
+        if not self.all_empty(positions, board):
+            return False
+        
+        return True
     
     def copy(self):
         copy = King(self.color)
@@ -39,3 +84,9 @@ class King(Piece):
     def get_moves(self, from_pos, board):
         for pos in self.move_positions(from_pos, board):
             yield NormalMove(from_pos, pos)
+
+        if self.can_castle_ks(from_pos, board):
+            yield Castle(MoveType.CASTLE_KS, from_pos)
+
+        if self.can_castle_qs(from_pos, board):
+            yield Castle(MoveType.CASTLE_QS, from_pos)

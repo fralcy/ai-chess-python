@@ -39,7 +39,7 @@ class GameState():
         # Filter out moves that would leave the player in check
         legal_moves = []
         for move in all_moves:
-            if move.is_legal(self._board, self._current_player):
+            if move.is_legal(self._board):
                 legal_moves.append(move)
                 
         return legal_moves
