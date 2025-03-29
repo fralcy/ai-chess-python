@@ -2,13 +2,14 @@ from logic.player import Player
 from logic.pieces import *
 from logic.position import Position
 from logic.piece_type import PieceType
+from logic.pieces.piece import Piece
 
 class Board:
     def __init__(self):
         self._pieces = [[None for _ in range(8)] for _ in range(8)]
         self.add_starting_pieces()
 
-    def get_piece(self, key):
+    def get_piece(self, key) -> Piece:
         if isinstance(key, tuple):
             row, col = key
             return self._pieces[row][col]
@@ -63,13 +64,7 @@ class Board:
         return positions
     
     def piece_positions_for(self, player):
-        positions = []
-        for row in range(8):
-            for col in range(8):
-                piece = self._pieces[row][col]
-                if piece and piece.color == player:
-                    positions.append(Position(row, col))
-        return positions
+        return [pos for pos in self.piece_positions() if self.get_piece(pos).color == player]
     
     def is_in_check(self, player):        
         # Check if any opponent piece can capture the king

@@ -51,12 +51,11 @@ def main():
                 if event.button == 1:  # Left mouse button
                     if game_over_menu is not None:  # Handle clicks on GameOverMenu
                         if game_over_menu.handle_restart_click(event):
-                            # Reset the game state for a new game
                             chess_board = ChessBoard(screen)
                             game_over_menu = None
                         elif game_over_menu.handle_exit_click(event):
                             running = False
-                    else:  # Only handle board clicks if no menu is displayed
+                    else:  # Handle clicks on ChessBoard or PromotionMenu
                         chess_board.handle_click(event.pos)
 
         # Fill the screen with a background color

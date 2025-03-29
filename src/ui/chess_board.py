@@ -10,6 +10,7 @@ from logic.player import Player
 from logic.piece_type import PieceType
 from logic.position import Position
 from logic.game_state import GameState
+from ui.promotion_menu import PromotionMenu  # Import PromotionMenu
 
 class ChessBoard:
     # Colors
@@ -29,6 +30,7 @@ class ChessBoard:
         self.load_pieces_images()
         self.selected_pos = None
         self.possible_moves = []
+        self.promotion_menu = None  # Add promotion menu state
         
     def load_pieces_images(self):
         """Load chess piece images."""
@@ -129,41 +131,62 @@ class ChessBoard:
     
     def handle_click(self, pos):
         """Handle mouse click on the board."""
+        if self.promotion_menu:  # Handle promotion menu clicks
+            selected_piece_type = self.promotion_menu.handle_click(pos)
+            if selected_piece_type:
+                # Perform the promotion
+                promotion_move = next(
+                    move for move in self.possible_moves
+                    if (move.type == MoveType.PAWN_PROMOTION)
+                )
+                promotion_move._new_type = selected_piece_type  # Update the promotion type
+                self.game_state.make_move(promotion_move)
+                self.promotion_menu = None  # Close the promotion menu
+            return
+
         col = pos[0] // self.SQUARE_SIZE
         row = pos[1] // self.SQUARE_SIZE
-        
+
         # Make sure we're within the board
         if 0 <= row < 8 and 0 <= col < 8:
             clicked_pos = Position(row, col)
             piece = self.board.get_piece(clicked_pos)
-            
+
             # If a piece is already selected
             if self.selected_pos:
                 # Check if clicked position is in possible moves
                 for move in self.possible_moves:
                     if move.to_pos == clicked_pos:
+                        # Check if the move is a promotion
+                        if move.type == MoveType.PAWN_PROMOTION:
+                            self.promotion_menu = PromotionMenu(
+                                self.screen,
+                                self.game_state.current_player,
+                                self.SQUARE_SIZE
+                            )
+                            return
                         # Execute the move
                         self.game_state.make_move(move)
                         self.selected_pos = None
                         self.possible_moves = []
                         return
-                
+
                 # If clicked on the same piece, deselect it
                 if self.selected_pos == clicked_pos:
                     self.selected_pos = None
                     self.possible_moves = []
                     return
-                
+
                 # If clicked on another piece of same color, select it instead
                 if piece and piece.color == self.game_state.current_player:
                     self.selected_pos = clicked_pos
                     self.possible_moves = list(self.game_state.legal_moves_for_piece(clicked_pos))
                     return
-                
+
                 # Otherwise, deselect current piece
                 self.selected_pos = None
                 self.possible_moves = []
-            
+
             # If no piece is selected yet and clicked on own piece
             elif piece and piece.color == self.game_state.current_player:
                 self.selected_pos = clicked_pos
@@ -174,3 +197,5 @@ class ChessBoard:
         self.draw_board()
         self.draw_highlights()
         self.draw_pieces()
+        if self.promotion_menu:  # Draw promotion menu if active
+            self.promotion_menu.draw()

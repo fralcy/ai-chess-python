@@ -61,7 +61,11 @@ class Pawn(Piece):
         for direction in [Direction.WEST, Direction.EAST]:
             to_pos = from_pos + self.forward + direction
             if self.can_capture_at(to_pos, board):
-                yield NormalMove(from_pos, to_pos)
+                if (to_pos.row == 0 or to_pos.row == 7):
+                    for promotion in self.promotion_moves(from_pos, to_pos):
+                        yield promotion 
+                else:
+                    yield NormalMove(from_pos, to_pos)
 
     def get_moves(self, from_pos, board):
         yield from self.forward_moves(from_pos, board)
