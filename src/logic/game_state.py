@@ -45,6 +45,7 @@ class GameState():
         return legal_moves
     
     def make_move(self, move):
+        self._board.set_pawn_skip_position(self._current_player, None)
         move.execute(self._board)
         self._current_player = self._current_player.opponent()
         self.check_for_game_over()

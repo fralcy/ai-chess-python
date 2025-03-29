@@ -4,6 +4,8 @@ from logic.player import Player
 from logic.direction import Direction
 from logic.moves.normal_move import NormalMove
 from logic.moves.pawn_promotion import PawnPromotion
+from logic.moves.double_pawn import DoublePawn
+from logic.moves.en_passant import EnPassant
 
 class Pawn(Piece):
     def __init__(self, color):
@@ -55,12 +57,16 @@ class Pawn(Piece):
 
             two_move_pos = one_move_pos + self.forward
             if not self.has_moved and self.can_move_to(two_move_pos, board):
-                yield NormalMove(from_pos, two_move_pos)
+                yield DoublePawn(from_pos, two_move_pos)
         
     def diagonal_moves(self, from_pos, board):
         for direction in [Direction.WEST, Direction.EAST]:
             to_pos = from_pos + self.forward + direction
-            if self.can_capture_at(to_pos, board):
+
+            pawn_skip_position = board.get_pawn_skip_position(self.color.opponent())
+            if pawn_skip_position is not None and to_pos == pawn_skip_position:
+                yield EnPassant(from_pos, to_pos)
+            elif self.can_capture_at(to_pos, board):
                 if (to_pos.row == 0 or to_pos.row == 7):
                     for promotion in self.promotion_moves(from_pos, to_pos):
                         yield promotion 

@@ -8,6 +8,10 @@ class Board:
     def __init__(self):
         self._pieces = [[None for _ in range(8)] for _ in range(8)]
         self.add_starting_pieces()
+        self.pawn_skip_positions = {
+            Player.WHITE: None,
+            Player.BLACK: None
+        }
 
     def get_piece(self, key) -> Piece:
         if isinstance(key, tuple):
@@ -22,6 +26,12 @@ class Board:
             self._pieces[row][col] = value
         else:
             self._pieces[key.row][key.column] = value
+
+    def get_pawn_skip_position(self, player) -> Position:
+        return self.pawn_skip_positions[player]
+    
+    def set_pawn_skip_position(self, player, position):
+        self.pawn_skip_positions[player] = position
 
     def add_starting_pieces(self):
         # Add black pieces
