@@ -3,6 +3,7 @@ from logic.piece_type import PieceType
 from logic.player import Player
 from logic.direction import Direction
 from logic.moves.normal_move import NormalMove
+from logic.moves.pawn_promotion import PawnPromotion
 
 class Pawn(Piece):
     def __init__(self, color):
@@ -36,11 +37,21 @@ class Pawn(Piece):
                     return True
         return False
     
+    def promotion_moves(self, from_pos, to_pos):
+        yield PawnPromotion(from_pos, to_pos, PieceType.QUEEN)
+        yield PawnPromotion(from_pos, to_pos, PieceType.ROOK)
+        yield PawnPromotion(from_pos, to_pos, PieceType.BISHOP)
+        yield PawnPromotion(from_pos, to_pos, PieceType.KNIGHT)
+    
     def forward_moves(self, from_pos, board):
         one_move_pos = from_pos + self.forward
 
         if self.can_move_to(one_move_pos, board):
-            yield NormalMove(from_pos, one_move_pos)
+            if (one_move_pos.row == 0 or one_move_pos.row == 7):
+               for promotion in self.promotion_moves(from_pos, one_move_pos):
+                   yield promotion 
+            else:
+                yield NormalMove(from_pos, one_move_pos)
 
             two_move_pos = one_move_pos + self.forward
             if not self.has_moved and self.can_move_to(two_move_pos, board):
