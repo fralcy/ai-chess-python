@@ -12,6 +12,8 @@ from logic.position import Position
 from logic.game_state import GameState
 from logic.move_type import MoveType
 from ui.promotion_menu import PromotionMenu  # Import PromotionMenu
+from ui.pause_menu import PauseMenu  # Import PauseMenu
+from ui.option import Option
 
 class ChessBoard:
     # Colors
@@ -32,6 +34,8 @@ class ChessBoard:
         self.selected_pos = None
         self.possible_moves = []
         self.promotion_menu = None  # Add promotion menu state
+        self.pause_menu = None  # Initialize to None, will be created when needed
+        self.is_paused = False  # Track if the game is paused
         
     def load_pieces_images(self):
         """Load chess piece images."""
@@ -218,3 +222,28 @@ class ChessBoard:
         self.draw_pieces()
         if self.promotion_menu:  # Draw promotion menu if active
             self.promotion_menu.draw()
+        if self.is_paused and self.pause_menu:  # Draw pause menu if active
+            self.pause_menu.draw()
+
+    def toggle_pause(self):
+        """Toggle the pause state of the game."""
+        self.is_paused = not self.is_paused
+        
+        if self.is_paused and not self.pause_menu:
+            self.pause_menu = PauseMenu(self.screen)
+
+    def handle_pause_menu_event(self, event):
+        """Handle events from the pause menu."""
+        if not self.is_paused or not self.pause_menu:
+            return False
+        
+        option = self.pause_menu.handle_event(event)
+        if option == Option.CONTINUE:
+            self.is_paused = False
+            return True
+        elif option == Option.RESTART:
+            self.__init__(self.screen)  # Restart the game by reinitializing
+            self.is_paused = False
+            return True
+        
+        return False

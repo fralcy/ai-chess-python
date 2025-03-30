@@ -47,8 +47,13 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    chess_board.toggle_pause()
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:  # Left mouse button
+                    if chess_board.handle_pause_menu_event(event):
+                        continue
                     if game_over_menu is not None:  # Handle clicks on GameOverMenu
                         if game_over_menu.handle_restart_click(event):
                             chess_board = ChessBoard(screen)
