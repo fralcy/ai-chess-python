@@ -7,6 +7,7 @@ class GameState():
         self._board = board
         self._current_player = current_player
         self._result = None
+        self._no_capture_or_pawn_move = 0
     
     @property
     def board(self):
@@ -28,6 +29,10 @@ class GameState():
     def result(self, result):
         self._result = result
 
+    @property
+    def no_capture_or_pawn_move(self) -> int:
+        return self._no_capture_or_pawn_move
+
     def legal_moves_for_piece(self, pos):
         piece = self._board.get_piece(pos)
         if piece is None or piece.color != self._current_player:
@@ -46,7 +51,11 @@ class GameState():
     
     def make_move(self, move):
         self._board.set_pawn_skip_position(self._current_player, None)
-        move.execute(self._board)
+        capture_or_pawn = move.execute(self._board)
+        if capture_or_pawn:
+            self._no_capture_or_pawn_move = 0
+        else:
+            self._no_capture_or_pawn_move += 1
         self._current_player = self._current_player.opponent()
         self.check_for_game_over()
 
@@ -64,6 +73,12 @@ class GameState():
                 self._result = Result.draw(EndReason.STALEMATE)
         elif self._board.insufficient_material():
             self._result = Result.draw(EndReason.INSUFFICIENT_MATERIAL);
+        elif self.fifty_moves_rule():
+            self._result = Result.draw(EndReason.FIFTY_MOVE_RULE);
 
     def is_game_over(self):
         return self._result is not None
+    
+    def fifty_moves_rule(self) -> bool:
+        full_moves = self._no_capture_or_pawn_move // 2
+        return full_moves == 50

@@ -54,9 +54,11 @@ class Castle(Move):
         else:
             raise ValueError("Invalid castle type")
     
-    def execute(self, board):
+    def execute(self, board) -> bool:
         NormalMove(self.from_pos, self.to_pos).execute(board);
         NormalMove(self.rook_from_pos, self.rook_to_pos).execute(board)
+
+        return False
 
     def is_legal(self, board):
         player = board.get_piece(self.from_pos).color

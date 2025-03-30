@@ -25,7 +25,9 @@ class DoublePawn(Move):
         self._to_pos = to_pos
         self._skipped_pos = Position((from_pos.row + to_pos.row) // 2, from_pos.column)
 
-    def execute(self, board):
+    def execute(self, board) -> bool:
         player = board.get_piece(self._from_pos).color
         board.set_pawn_skip_position(player, self._skipped_pos)
         NormalMove(self._from_pos, self._to_pos).execute(board)
+
+        return True

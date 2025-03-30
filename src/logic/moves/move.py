@@ -17,7 +17,7 @@ class Move(ABC):
         pass
 
     @abstractmethod
-    def execute(self, board):
+    def execute(self, board) -> bool:
         pass
     
     def is_legal(self, board):

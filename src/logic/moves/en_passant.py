@@ -25,6 +25,8 @@ class EnPassant(Move):
         self._to_pos = to_pos
         self._capture_pos = Position(from_pos.row, to_pos.column)
 
-    def execute(self, board):
+    def execute(self, board) -> bool:
         NormalMove(self._from_pos, self._to_pos).execute(board)
         board.set_piece(self._capture_pos, None)
+
+        return True

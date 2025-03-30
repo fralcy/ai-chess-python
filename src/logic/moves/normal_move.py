@@ -1,5 +1,6 @@
 from logic.moves.move import Move
 from logic.move_type import MoveType
+from logic.piece_type import PieceType
 
 class NormalMove(Move):
     @property
@@ -18,8 +19,11 @@ class NormalMove(Move):
         self._from_pos = from_pos
         self._to_pos = to_pos
 
-    def execute(self, board):
+    def execute(self, board) -> bool:
         piece = board.get_piece(self.from_pos)
+        capture = not board.is_empty(self.to_pos)
         board.set_piece(self.to_pos, piece)
         board.set_piece(self.from_pos, None)
         piece.has_moved = True
+
+        return capture or piece.piece_type == PieceType.PAWN

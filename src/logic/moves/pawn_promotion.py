@@ -43,7 +43,7 @@ class PawnPromotion(Move):
             raise ValueError("Invalid piece type for promotion.")
         
         
-    def execute(self, board):
+    def execute(self, board) -> bool:
         pawn = board.get_piece(self.from_pos)
         color = pawn.color
         board.set_piece(self.from_pos, None)
@@ -51,3 +51,5 @@ class PawnPromotion(Move):
         new_piece = self.create_promotion_piece(color)
         new_piece.has_moved = True
         board.set_piece(self.to_pos, new_piece)
+
+        return True
