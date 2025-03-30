@@ -4,6 +4,9 @@ from logic.position import Position
 from logic.piece_type import PieceType
 from logic.pieces.piece import Piece
 from logic.counting import Counting
+from typing import List
+from logic.direction import Direction
+from logic.moves.en_passant import EnPassant
 
 class Board:
     def __init__(self):
@@ -144,3 +147,57 @@ class Board:
             piece = self.get_piece(pos)
             if piece.piece_type == piece_type:
                 return pos
+        return None
+    
+    def is_unmoved_king_and_rook(self, king_pos: Position, rook_pos: Position) -> bool:
+        if self.is_empty(king_pos) or self.is_empty(rook_pos):
+            return False
+        
+        king = self.get_piece(king_pos)
+        rook = self.get_piece(rook_pos)
+
+        return king.piece_type == PieceType.KING and \
+               rook.piece_type == PieceType.ROOK and \
+               not king.has_moved and \
+               not rook.has_moved
+    
+    def can_castle_ks(self, player: Player) -> bool:
+        if player == Player.WHITE:
+            return self.is_unmoved_king_and_rook(Position(7, 4), Position(7, 7))
+        else:
+            return self.is_unmoved_king_and_rook(Position(0, 4), Position(0, 7))
+    
+    def can_castle_qs(self, player: Player) -> bool:
+        if player == Player.WHITE:
+            return self.is_unmoved_king_and_rook(Position(7, 4), Position(7, 0))
+        else:
+            return self.is_unmoved_king_and_rook(Position(0, 4), Position(0, 0))
+    
+    def has_pawn_in_position(self, player: Player, pawn_positions: List[Position], skip_pos:Position) -> bool:
+        for pos in pawn_positions:
+            piece = self.get_piece(pos)
+            if piece is None or piece.color != player or piece.piece_type != PieceType.PAWN:
+                continue
+
+            move = EnPassant(pos, skip_pos)
+            if move.is_legal(self):
+                return True
+            
+        return False
+
+    def can_capture_en_passant(self, player: Player) -> bool:
+        skip_pos = self.get_pawn_skip_position(player.opponent())
+
+        if skip_pos is None:
+            return False
+        
+        pawn_positions: List[Position] = []
+        if player == Player.WHITE:
+            pawn_positions.append(skip_pos + Direction.SOUTH_WEST)
+            pawn_positions.append(skip_pos + Direction.SOUTH_EAST)
+            
+        else:
+            pawn_positions.append(skip_pos + Direction.NORTH_WEST)
+            pawn_positions.append(skip_pos + Direction.NORTH_EAST)
+
+        return self.has_pawn_in_position(player, pawn_positions, skip_pos)

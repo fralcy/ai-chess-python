@@ -2,12 +2,18 @@ from logic.pieces.piece import Piece
 from logic.player import Player
 from logic.result import Result
 from logic.end_reason import EndReason
+from logic.state_string import StateString
 class GameState():
     def __init__(self, board, current_player):
         self._board = board
         self._current_player = current_player
         self._result = None
         self._no_capture_or_pawn_move = 0
+
+        self._state_history = {}
+
+        self._state_string = StateString(current_player, board).__str__()
+        self._state_history[self._state_string] = 1
     
     @property
     def board(self):
@@ -32,6 +38,19 @@ class GameState():
     @property
     def no_capture_or_pawn_move(self) -> int:
         return self._no_capture_or_pawn_move
+    
+    @property
+    def state_string(self) -> str:
+        return self._state_string
+    
+    @property
+    def state_history(self) -> dict[str, int]:
+        return self._state_history
+    
+    @state_history.setter
+    def state_history(self, state_string):
+        if state_string in self._state_history:
+            self._state_history[state_string] += 1
 
     def legal_moves_for_piece(self, pos):
         piece = self._board.get_piece(pos)
@@ -54,9 +73,11 @@ class GameState():
         capture_or_pawn = move.execute(self._board)
         if capture_or_pawn:
             self._no_capture_or_pawn_move = 0
+            self._state_history.clear()
         else:
             self._no_capture_or_pawn_move += 1
         self._current_player = self._current_player.opponent()
+        self.update_state_string()
         self.check_for_game_over()
 
     def all_legal_moves_for(self, player):
@@ -75,6 +96,8 @@ class GameState():
             self._result = Result.draw(EndReason.INSUFFICIENT_MATERIAL);
         elif self.fifty_moves_rule():
             self._result = Result.draw(EndReason.FIFTY_MOVE_RULE);
+        elif self.threefold_repetition():
+            self._result = Result.draw(EndReason.THREEFOLD_REPETITION);
 
     def is_game_over(self):
         return self._result is not None
@@ -82,3 +105,14 @@ class GameState():
     def fifty_moves_rule(self) -> bool:
         full_moves = self._no_capture_or_pawn_move // 2
         return full_moves == 50
+    
+    def update_state_string(self):
+        self._state_string = StateString(self._current_player, self._board).__str__()
+        
+        if self._state_string in self._state_history:
+            self._state_history[self._state_string] += 1
+        else:
+            self._state_history[self._state_string] = 1
+
+    def threefold_repetition(self) -> bool:
+        return self._state_history[self._state_string] == 3
