@@ -14,8 +14,10 @@ class Result:
         self._winner = winner
         self._end_reason = end_reason
 
-    def __win__(self, winner: Player):
+    @staticmethod
+    def win(winner: Player):
         return Result(winner, EndReason.CHECKMATE)
     
-    def __draw__(self):
-        return Result(Player.NONE, EndReason.STALEMATE)
+    @staticmethod
+    def draw(end_reason: EndReason):
+        return Result(Player.NONE, end_reason)

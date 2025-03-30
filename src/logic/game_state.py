@@ -59,9 +59,11 @@ class GameState():
     def check_for_game_over(self):
         if len(self.all_legal_moves_for(self._current_player)) == 0:
             if self._board.is_in_check(self._current_player):
-                self._result = Result(self._current_player.opponent(), EndReason.CHECKMATE)
+                self._result = Result.win(self._current_player.opponent())
             else:
-                self._result = Result(Player.NONE, EndReason.STALEMATE)
+                self._result = Result.draw(EndReason.STALEMATE)
+        elif self._board.insufficient_material():
+            self._result = Result.draw(EndReason.INSUFFICIENT_MATERIAL);
 
     def is_game_over(self):
         return self._result is not None

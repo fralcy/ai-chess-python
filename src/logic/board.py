@@ -3,6 +3,7 @@ from logic.pieces import *
 from logic.position import Position
 from logic.piece_type import PieceType
 from logic.pieces.piece import Piece
+from logic.counting import Counting
 
 class Board:
     def __init__(self):
@@ -99,3 +100,47 @@ class Board:
                     board_copy._pieces[row][col] = piece.copy()
         
         return board_copy
+    
+    def count_pieces(self) -> Counting:
+        counting = Counting()
+        for pos in self.piece_positions():
+            piece = self.get_piece(pos)
+            counting.increment(piece.color, piece.piece_type)
+        
+        return counting
+    
+    def insufficient_material(self) -> bool:
+        counting = self.count_pieces()
+
+        return self.is_king_vs_king(counting) or \
+               self.is_king_and_bishop_vs_king(counting) or \
+                self.is_king_and_knight_vs_king(counting) or \
+                self.is_king_and_bishop_vs_king_and_bishop(counting)
+
+    @staticmethod
+    def  is_king_vs_king(counting: Counting) -> bool:
+        return counting.total_count == 2
+    
+    @staticmethod
+    def is_king_and_bishop_vs_king(counting: Counting) -> bool:
+        return counting.total_count == 3 and (counting.White(PieceType.BISHOP) == 1 or counting.Black(PieceType.BISHOP) == 1)
+    
+    @staticmethod
+    def is_king_and_knight_vs_king(counting: Counting) -> bool:
+        return counting.total_count == 3 and (counting.White(PieceType.KNIGHT) == 1 or counting.Black(PieceType.KNIGHT) == 1)
+    
+    def is_king_and_bishop_vs_king_and_bishop(self, counting: Counting) -> bool:
+        if counting.total_count != 4:
+            return False
+        if counting.White(PieceType.BISHOP) != 1 and counting.Black(PieceType.BISHOP) != 1:
+            return False
+        w_bishop_pos = self.find_piece(Player.WHITE, PieceType.BISHOP)
+        b_bishop_pos = self.find_piece(Player.BLACK, PieceType.BISHOP)
+
+        return w_bishop_pos.square_color() == b_bishop_pos.square_color()
+        
+    def find_piece(self, color: Player, piece_type: PieceType) -> Position:
+        for pos in self.piece_positions_for(color):
+            piece = self.get_piece(pos)
+            if piece.piece_type == piece_type:
+                return pos
