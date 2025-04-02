@@ -1,6 +1,7 @@
 import pygame
 import sys
 import os
+from ui.ai_menu import AIMenu
 
 # Add parent directory to path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -31,7 +32,11 @@ def main():
     BOARD_SIZE = SQUARE_SIZE * 8
     screen = pygame.display.set_mode((BOARD_SIZE, BOARD_SIZE))
     pygame.display.set_caption("Chess Game")
-    
+
+    # Tạo menu AI
+    ai_menu = AIMenu(screen)
+    show_ai_menu = True  # Hiển thị menu AI khi bắt đầu
+
     # Create chess board
     chess_board = ChessBoard(screen)
     
@@ -52,22 +57,43 @@ def main():
                     chess_board.toggle_pause()
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:  # Left mouse button
-                    if chess_board.handle_pause_menu_event(event):
-                        continue
-                    if game_over_menu is not None:  # Handle clicks on GameOverMenu
-                        if game_over_menu.handle_restart_click(event):
+                    if show_ai_menu:
+                        # Xử lý sự kiện trên menu AI
+                        result = ai_menu.handle_event(event)
+                        if result:
+                            # Người dùng đã chọn xong, khởi tạo bàn cờ
                             chess_board = ChessBoard(screen)
-                            game_over_menu = None
-                        elif game_over_menu.handle_exit_click(event):
-                            running = False
-                    else:  # Handle clicks on ChessBoard or PromotionMenu
-                        chess_board.handle_click(event.pos)
+                            # Thiết lập trò chơi với AI
+                            chess_board.setup_ai_game(
+                                result["player_color"],
+                                result["difficulty"]
+                            )
+                            show_ai_menu = False
+                    elif chess_board:
+                        # Xử lý click trên bàn cờ
+                        if chess_board.handle_pause_menu_event(event):
+                            continue
+                        
+                        if game_over_menu is not None:  # Xử lý click trên GameOverMenu
+                            if game_over_menu.handle_restart_click(event):
+                                # Quay về menu AI khi bắt đầu lại
+                                show_ai_menu = True
+                                chess_board = None
+                                game_over_menu = None
+                            elif game_over_menu.handle_exit_click(event):
+                                running = False
+                        elif not chess_board.is_paused:  # Chỉ xử lý click trên bàn cờ khi không tạm dừng
+                            chess_board.handle_click(event.pos)
 
         # Fill the screen with a background color
         screen.fill((0, 0, 0))
         
-        # Draw the chess board and pieces
-        chess_board.draw()
+        if show_ai_menu:
+            # Hiển thị menu AI
+            ai_menu.draw()
+        else:
+            # Hiển thị bàn cờ
+            chess_board.draw()
         
         # Check if game has ended
         if chess_board.game_state.is_game_over() and game_over_menu is None:
