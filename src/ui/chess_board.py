@@ -279,9 +279,23 @@ class ChessBoard:
             self.is_paused = False
             return True
         elif option == Option.RESTART:
-            self.__init__(self.screen)  # Restart the game by reinitializing
+            # Khởi tạo lại bàn cờ nhưng giữ nguyên cài đặt AI
+            player_color = self.player_color
+            use_ai = self.use_ai
+            ai_difficulty = self.ai_player.difficulty if self.ai_player else 3
+            
+            # Khởi tạo lại bàn cờ
+            self.__init__(self.screen)
+            
+            # Thiết lập lại AI nếu cần
+            if use_ai:
+                self.setup_ai_game(player_color, ai_difficulty)
+                
             self.is_paused = False
             return True
+        elif option == Option.EXIT:
+            # Báo hiệu rằng người chơi muốn quay về AI menu
+            return "AI_MENU"
         
         return False
     

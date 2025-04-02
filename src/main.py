@@ -54,7 +54,8 @@ def main():
                 running = False
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
-                    chess_board.toggle_pause()
+                    if chess_board and not show_ai_menu:
+                        chess_board.toggle_pause()
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:  # Left mouse button
                     if show_ai_menu:
@@ -71,7 +72,14 @@ def main():
                             show_ai_menu = False
                     elif chess_board:
                         # Xử lý click trên bàn cờ
-                        if chess_board.handle_pause_menu_event(event):
+                        pause_result = chess_board.handle_pause_menu_event(event)
+                        if pause_result == True:
+                            continue
+                        elif pause_result == "AI_MENU":
+                            # Người chơi muốn quay về menu AI
+                            show_ai_menu = True
+                            chess_board = None
+                            game_over_menu = None
                             continue
                         
                         if game_over_menu is not None:  # Xử lý click trên GameOverMenu
@@ -95,14 +103,14 @@ def main():
             # Hiển thị bàn cờ
             chess_board.draw()
         
-        # Check if game has ended
-        if chess_board.game_state.is_game_over() and game_over_menu is None:
-            result = chess_board.game_state.result
-            game_over_menu = GameOverMenu(screen, chess_board.game_state)
+            # Check if game has ended
+            if chess_board and chess_board.game_state.is_game_over() and game_over_menu is None:
+                result = chess_board.game_state.result
+                game_over_menu = GameOverMenu(screen, chess_board.game_state)
         
-        # Draw game over menu if game has ended
-        if game_over_menu is not None:
-            game_over_menu.draw()
+            # Draw game over menu if game has ended
+            if game_over_menu is not None:
+                game_over_menu.draw()
         
         # Update the display
         pygame.display.flip()
