@@ -30,7 +30,10 @@ def main():
     # Set up the display
     SQUARE_SIZE = 80
     BOARD_SIZE = SQUARE_SIZE * 8
-    screen = pygame.display.set_mode((BOARD_SIZE, BOARD_SIZE))
+    STATUS_BAR_HEIGHT = 30  # Chiều cao của thanh trạng thái
+    
+    # Tạo cửa sổ với chiều cao bao gồm cả thanh trạng thái
+    screen = pygame.display.set_mode((BOARD_SIZE, BOARD_SIZE + STATUS_BAR_HEIGHT))
     pygame.display.set_caption("Chess Game")
 
     # Tạo menu AI

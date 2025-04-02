@@ -14,8 +14,8 @@ from logic.piece_type import PieceType
 from logic.position import Position
 from logic.game_state import GameState
 from logic.move_type import MoveType
-from ui.promotion_menu import PromotionMenu  # Import PromotionMenu
-from ui.pause_menu import PauseMenu  # Import PauseMenu
+from ui.promotion_menu import PromotionMenu
+from ui.pause_menu import PauseMenu
 from ui.option import Option
 
 class ChessBoard:
@@ -24,10 +24,14 @@ class ChessBoard:
     DARK_SQUARE = (181, 136, 99)    # Brown color for dark squares
     HIGHLIGHT_COLOR = (124, 252, 0, 128)  # Semi-transparent green for possible moves
     SELECTED_COLOR = (255, 255, 0, 160)   # Semi-transparent yellow for selected piece
+    STATUS_BAR_COLOR = (50, 50, 50)  # Dark gray for status bar
+    STATUS_TEXT_COLOR = (255, 255, 255)  # White text
+    AI_THINKING_COLOR = (255, 165, 0)  # Orange text for "AI thinking..."
     
     # Board dimensions
     SQUARE_SIZE = 80
     BOARD_SIZE = SQUARE_SIZE * 8
+    STATUS_BAR_HEIGHT = 30  # Chiều cao thanh trạng thái
     
     def __init__(self, screen):
         self.screen = screen
@@ -36,14 +40,20 @@ class ChessBoard:
         self.load_pieces_images()
         self.selected_pos = None
         self.possible_moves = []
-        self.promotion_menu = None  # Add promotion menu state
-        self.pause_menu = None  # Initialize to None, will be created when needed
-        self.is_paused = False  # Track if the game is paused
+        self.promotion_menu = None
+        self.pause_menu = None
+        self.is_paused = False
         self.ai_player = None
         self.ai_thinking = False
-        self.player_color = Player.WHITE  # Màu người chơi mặc định
-        self.use_ai = False  # Có sử dụng AI không
+        self.player_color = Player.WHITE
+        self.use_ai = False
         
+        # Tạo font cho thanh trạng thái
+        try:
+            self.status_font = pygame.font.Font("freesansbold.ttf", 18)
+        except:
+            self.status_font = pygame.font.SysFont('Arial', 18, bold=True)
+    
     def load_pieces_images(self):
         """Load chess piece images."""
         self.piece_images = {}
@@ -71,6 +81,9 @@ class ChessBoard:
         # Create font for labels
         font = pygame.font.SysFont('Arial', 16)
         
+        # Vẽ bàn cờ bắt đầu từ vị trí dưới thanh trạng thái
+        board_start_y = self.STATUS_BAR_HEIGHT
+        
         for row in range(8):
             for col in range(8):
                 # Determine square color
@@ -80,7 +93,7 @@ class ChessBoard:
                 pygame.draw.rect(
                     self.screen,
                     color,
-                    (col * self.SQUARE_SIZE, row * self.SQUARE_SIZE, 
+                    (col * self.SQUARE_SIZE, board_start_y + row * self.SQUARE_SIZE, 
                      self.SQUARE_SIZE, self.SQUARE_SIZE)
                 )
                 
@@ -88,17 +101,20 @@ class ChessBoard:
                 if col == 0:  # Numbers on the left edge (rows)
                     text_color = self.DARK_SQUARE if (row + col) % 2 == 0 else self.LIGHT_SQUARE
                     label = font.render(str(8 - row), True, text_color)
-                    self.screen.blit(label, (5, row * self.SQUARE_SIZE + 5))
+                    self.screen.blit(label, (5, board_start_y + row * self.SQUARE_SIZE + 5))
                 
                 if row == 7:  # Letters on the bottom edge (columns)
                     text_color = self.DARK_SQUARE if (row + col) % 2 == 0 else self.LIGHT_SQUARE
                     label = font.render(chr(97 + col), True, text_color)  # 'a' through 'h'
                     self.screen.blit(label, (col * self.SQUARE_SIZE + self.SQUARE_SIZE - 15, 
-                                           self.BOARD_SIZE - 20))
+                                           board_start_y + self.BOARD_SIZE - 20))
     
     def draw_pieces(self):
         """Draw pieces on the board according to the current board state."""
         from ui.fallback_renderer import FallbackRenderer
+        
+        # Vẽ quân cờ bắt đầu từ vị trí dưới thanh trạng thái
+        board_start_y = self.STATUS_BAR_HEIGHT
         
         for row in range(8):
             for col in range(8):
@@ -108,7 +124,7 @@ class ChessBoard:
                     if image_key in self.piece_images:
                         self.screen.blit(
                             self.piece_images[image_key],
-                            (col * self.SQUARE_SIZE, row * self.SQUARE_SIZE)
+                            (col * self.SQUARE_SIZE, board_start_y + row * self.SQUARE_SIZE)
                         )
                     else:
                         # Use fallback renderer if image not available
@@ -116,7 +132,7 @@ class ChessBoard:
                             self.screen, 
                             piece, 
                             col * self.SQUARE_SIZE, 
-                            row * self.SQUARE_SIZE, 
+                            board_start_y + row * self.SQUARE_SIZE, 
                             self.SQUARE_SIZE
                         )
     
@@ -126,11 +142,14 @@ class ChessBoard:
             # Create a semi-transparent surface for the highlights
             highlight_surface = pygame.Surface((self.SQUARE_SIZE, self.SQUARE_SIZE), pygame.SRCALPHA)
             
+            # Vẽ highlight bắt đầu từ vị trí dưới thanh trạng thái
+            board_start_y = self.STATUS_BAR_HEIGHT
+            
             # Highlight selected piece
             row, col = self.selected_pos.row, self.selected_pos.column
             pygame.draw.rect(highlight_surface, self.SELECTED_COLOR, 
                            (0, 0, self.SQUARE_SIZE, self.SQUARE_SIZE))
-            self.screen.blit(highlight_surface, (col * self.SQUARE_SIZE, row * self.SQUARE_SIZE))
+            self.screen.blit(highlight_surface, (col * self.SQUARE_SIZE, board_start_y + row * self.SQUARE_SIZE))
             
             # Highlight possible moves
             highlight_surface.fill((0, 0, 0, 0))  # Clear with transparent color
@@ -139,7 +158,49 @@ class ChessBoard:
             
             for move in self.possible_moves:
                 to_row, to_col = move.to_pos.row, move.to_pos.column
-                self.screen.blit(highlight_surface, (to_col * self.SQUARE_SIZE, to_row * self.SQUARE_SIZE))
+                self.screen.blit(highlight_surface, (to_col * self.SQUARE_SIZE, board_start_y + to_row * self.SQUARE_SIZE))
+    
+    def draw_status_bar(self):
+        """Vẽ thanh trạng thái hiển thị lượt chơi hiện tại."""
+        # Vẽ nền của thanh trạng thái
+        pygame.draw.rect(
+            self.screen,
+            self.STATUS_BAR_COLOR,
+            (0, 0, self.BOARD_SIZE, self.STATUS_BAR_HEIGHT)
+        )
+        
+        # Xác định nội dung hiển thị
+        if self.game_state.is_game_over():
+            # Hiển thị kết quả nếu trò chơi đã kết thúc
+            if self.game_state.result.winner == Player.NONE:
+                status_text = "Game Over - Draw"
+            else:
+                winner = "White" if self.game_state.result.winner == Player.WHITE else "Black"
+                status_text = f"Game Over - {winner} wins"
+        elif self.ai_thinking:
+            # Hiển thị "AI thinking..." khi AI đang suy nghĩ
+            status_text = "AI thinking..."
+            # Vẽ văn bản với màu khác
+            status_surface = self.status_font.render(status_text, True, self.AI_THINKING_COLOR)
+            status_rect = status_surface.get_rect(center=(self.BOARD_SIZE // 2, self.STATUS_BAR_HEIGHT // 2))
+            self.screen.blit(status_surface, status_rect)
+            return
+        else:
+            # Hiển thị lượt của người chơi hiện tại
+            current_player = "White" if self.game_state.current_player == Player.WHITE else "Black"
+            
+            if self.use_ai:
+                if self.game_state.current_player == self.player_color:
+                    status_text = "Your turn"
+                else:
+                    status_text = "AI's turn"
+            else:
+                status_text = f"{current_player}'s turn"
+        
+        # Vẽ văn bản
+        status_surface = self.status_font.render(status_text, True, self.STATUS_TEXT_COLOR)
+        status_rect = status_surface.get_rect(center=(self.BOARD_SIZE // 2, self.STATUS_BAR_HEIGHT // 2))
+        self.screen.blit(status_surface, status_rect)
     
     def handle_click(self, pos):
         """Handle mouse click on the board."""
@@ -182,8 +243,11 @@ class ChessBoard:
                         self.make_ai_move()
                 return
 
-        col = pos[0] // self.SQUARE_SIZE
-        row = pos[1] // self.SQUARE_SIZE
+        # Điều chỉnh vị trí click để tính toán đúng ô trên bàn cờ
+        # (trừ đi chiều cao thanh trạng thái)
+        adjusted_pos = (pos[0], pos[1] - self.STATUS_BAR_HEIGHT)
+        col = adjusted_pos[0] // self.SQUARE_SIZE
+        row = adjusted_pos[1] // self.SQUARE_SIZE
 
         # Make sure we're within the board
         if 0 <= row < 8 and 0 <= col < 8:
@@ -240,6 +304,10 @@ class ChessBoard:
     
     def draw(self):
         """Draw the complete chess board with pieces and highlights."""
+        # Vẽ thanh trạng thái trước
+        self.draw_status_bar()
+        
+        # Sau đó vẽ bàn cờ và các phần tử khác
         self.draw_board()
         self.draw_highlights()
         self.draw_pieces()
@@ -249,18 +317,6 @@ class ChessBoard:
         
         if self.is_paused and self.pause_menu:  # Draw pause menu if active
             self.pause_menu.draw()
-        
-        # Hiển thị thông báo khi AI đang suy nghĩ
-        if self.use_ai and self.ai_thinking:
-            # Tạo một overlay bán trong suốt
-            overlay = pygame.Surface((50, 30), pygame.SRCALPHA)
-            overlay.fill((0, 0, 0, 150))
-            self.screen.blit(overlay, (self.BOARD_SIZE - 150, 10))
-            
-            # Hiển thị thông báo
-            font = pygame.font.SysFont('Arial', 16)
-            text = font.render("AI thinking...", True, (255, 255, 255))
-            self.screen.blit(text, (self.BOARD_SIZE - 140, 15))
     
     def toggle_pause(self):
         """Toggle the pause state of the game."""
