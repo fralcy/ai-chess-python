@@ -26,6 +26,10 @@ def main():
     
     # Initialize pygame
     pygame.init()
+
+    # Set up the icon
+    icon = pygame.image.load('assets/icon/chess_icon.png')
+    pygame.display.set_icon(icon)
     
     # Set up the display
     SQUARE_SIZE = 80
