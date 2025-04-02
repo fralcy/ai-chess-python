@@ -1,6 +1,9 @@
 import pygame
 import sys
 import os
+from ai.ai_player import AIPlayer
+import threading
+import time
 
 # Add parent directory to path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -36,6 +39,10 @@ class ChessBoard:
         self.promotion_menu = None  # Add promotion menu state
         self.pause_menu = None  # Initialize to None, will be created when needed
         self.is_paused = False  # Track if the game is paused
+        self.ai_player = None
+        self.ai_thinking = False
+        self.player_color = Player.WHITE  # Màu người chơi mặc định
+        self.use_ai = False  # Có sử dụng AI không
         
     def load_pieces_images(self):
         """Load chess piece images."""
@@ -136,6 +143,10 @@ class ChessBoard:
     
     def handle_click(self, pos):
         """Handle mouse click on the board."""
+        # Nếu đang sử dụng AI và không phải lượt của người chơi thì bỏ qua click
+        if self.use_ai and self.game_state.current_player != self.player_color:
+            return
+        
         # Import MoveType if it's not already imported at the top
         from logic.move_type import MoveType
         
@@ -214,17 +225,36 @@ class ChessBoard:
             elif piece and piece.color == self.game_state.current_player:
                 self.selected_pos = clicked_pos
                 self.possible_moves = list(self.game_state.legal_moves_for_piece(clicked_pos))
+        # Sau khi người chơi đã thực hiện nước đi, kiểm tra xem game có kết thúc không
+        if self.use_ai and not self.game_state.is_game_over():
+            # Nếu đến lượt AI, yêu cầu AI thực hiện nước đi
+            if self.game_state.current_player == self.ai_player.player_color:
+                self.make_ai_move()
     
     def draw(self):
         """Draw the complete chess board with pieces and highlights."""
         self.draw_board()
         self.draw_highlights()
         self.draw_pieces()
+        
         if self.promotion_menu:  # Draw promotion menu if active
             self.promotion_menu.draw()
+        
         if self.is_paused and self.pause_menu:  # Draw pause menu if active
             self.pause_menu.draw()
-
+        
+        # Hiển thị thông báo khi AI đang suy nghĩ
+        if self.use_ai and self.ai_thinking:
+            # Tạo một overlay bán trong suốt
+            overlay = pygame.Surface((50, 30), pygame.SRCALPHA)
+            overlay.fill((0, 0, 0, 150))
+            self.screen.blit(overlay, (self.BOARD_SIZE - 150, 10))
+            
+            # Hiển thị thông báo
+            font = pygame.font.SysFont('Arial', 16)
+            text = font.render("AI thinking...", True, (255, 255, 255))
+            self.screen.blit(text, (self.BOARD_SIZE - 140, 15))
+    
     def toggle_pause(self):
         """Toggle the pause state of the game."""
         self.is_paused = not self.is_paused
@@ -247,3 +277,71 @@ class ChessBoard:
             return True
         
         return False
+    
+    def setup_ai_game(self, player_color, difficulty=3):
+        """
+        Thiết lập game với AI.
+        
+        Args:
+            player_color: Màu quân của người chơi
+            difficulty: Độ khó của AI (1-5)
+        """
+        self.player_color = player_color
+        self.use_ai = True
+        
+        # AI sẽ chơi màu đối diện với người chơi
+        ai_color = Player.BLACK if player_color == Player.WHITE else Player.WHITE
+        
+        # Tạo đối tượng AI player
+        self.ai_player = AIPlayer(ai_color, difficulty)
+        
+        # Nếu AI là WHITE, nó sẽ đi trước
+        if ai_color == Player.WHITE:
+            self.make_ai_move()
+
+    def make_ai_move(self):
+        """Yêu cầu AI tìm và thực hiện nước đi tốt nhất."""
+        if not self.use_ai or self.ai_player is None:
+            return
+        
+        # Kiểm tra xem hiện tại có phải lượt của AI không
+        if self.game_state.current_player != self.ai_player.player_color:
+            return
+        
+        # Đánh dấu AI đang suy nghĩ (để hiển thị thông báo nếu cần)
+        self.ai_thinking = True
+        
+        # Tạo một thread riêng để AI tính toán, không làm đơ giao diện
+        def ai_move_thread():
+            # Để AI chọn nước đi
+            move = self.ai_player.choose_move(self.game_state)
+            
+            # Thực hiện nước đi nếu tìm được
+            if move:
+                # Kiểm tra xem nước đi có phải là phong cấp tốt không
+                if move.type == MoveType.PAWN_PROMOTION:
+                    # AI sẽ chọn phong cấp tốt thành quân gì
+                    from logic.piece_type import PieceType
+                    from logic.moves.pawn_promotion import PawnPromotion
+                    
+                    # AI thường chọn phong cấp thành Hậu
+                    updated_move = PawnPromotion(
+                        move.from_pos,
+                        move.to_pos,
+                        PieceType.QUEEN
+                    )
+                    self.game_state.make_move(updated_move)
+                else:
+                    self.game_state.make_move(move)
+            
+            # Đánh dấu AI đã nghĩ xong
+            self.ai_thinking = False
+            
+            # Reset selected position và possible moves
+            self.selected_pos = None
+            self.possible_moves = []
+        
+        # Tạo và bắt đầu thread
+        ai_thread = threading.Thread(target=ai_move_thread)
+        ai_thread.daemon = True  # Để thread tự động kết thúc khi thoát game
+        ai_thread.start()
