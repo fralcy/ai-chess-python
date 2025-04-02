@@ -42,37 +42,66 @@ class AIMenu:
         except:
             self.button_font = pygame.font.SysFont('Arial', 24)
         
+        # Tạo panel chính
+        panel_width = self.screen_width * 0.8
+        panel_height = self.screen_height * 0.7
+        self.panel_rect = pygame.Rect(
+            (self.screen_width - panel_width) // 2,
+            (self.screen_height - panel_height) // 2,
+            panel_width,
+            panel_height
+        )
+        
+        # Giảm khoảng cách từ tiêu đề xuống phần "Play as"
+        title_y = self.panel_rect.top + 40  # Giảm từ 50 xuống 40
+        
+        # Tính toán vị trí cho phần Play as
+        play_as_y = title_y + 70  # Giảm khoảng cách giữa tiêu đề và "Play as"
+        
         # Create play mode buttons
         button_width = 180
         button_height = 60
-        button_spacing = 30
+        button_spacing = 40  # Khoảng cách giữa các nút màu
+        
+        # Tính toán vị trí cho các nút màu sắc
+        color_buttons_y = play_as_y + 50
         
         self.play_as_white_button = pygame.Rect(
             self.screen_width // 2 - button_width - button_spacing // 2,
-            self.screen_height // 2 - 50,
+            color_buttons_y,
             button_width,
             button_height
         )
         
         self.play_as_black_button = pygame.Rect(
             self.screen_width // 2 + button_spacing // 2,
-            self.screen_height // 2 - 50,
+            color_buttons_y,
             button_width,
             button_height
         )
         
+        # Tính toán vị trí cho phần Difficulty
+        diff_y = color_buttons_y + button_height + 30  # Giảm khoảng cách giữa các nút màu và "Difficulty"
+        
         # Create difficulty buttons
-        diff_button_width = 80
+        diff_button_width = 70
         diff_button_height = 50
-        diff_button_spacing = 20
+        diff_button_spacing = 10  # Khoảng cách giữa các nút khó
+        
+        # Tính tổng chiều rộng của các nút khó + khoảng cách
         total_diff_width = 5 * diff_button_width + 4 * diff_button_spacing
+        
+        # Tính vị trí bắt đầu để căn giữa các nút khó
         diff_start_x = (self.screen_width - total_diff_width) // 2
+        
+        # Tính toán vị trí cho các nút độ khó
+        diff_buttons_y = diff_y + 50
         
         self.difficulty_buttons = []
         for i in range(5):
             button = pygame.Rect(
                 diff_start_x + i * (diff_button_width + diff_button_spacing),
-                self.screen_height // 2 + 60,
+                diff_buttons_y,
                 diff_button_width,
                 diff_button_height
             )
@@ -82,10 +111,13 @@ class AIMenu:
         self.player_color = "white"  # Default: player is white
         self.difficulty = 3  # Default: medium difficulty (1-5)
         
+        # Tính toán vị trí cho nút Start game
+        start_button_y = diff_buttons_y + diff_button_height + 40  # Giảm khoảng cách xuống nút Start
+        
         # Start button
         self.start_button = pygame.Rect(
             (self.screen_width - 200) // 2,
-            self.screen_height // 2 + 150,
+            start_button_y,
             200,
             70
         )
@@ -98,29 +130,21 @@ class AIMenu:
         self.screen.blit(overlay, (0, 0))
         
         # Draw a decorative panel in the center
-        panel_width = self.screen_width * 0.8
-        panel_height = self.screen_height * 0.7
-        panel_rect = pygame.Rect(
-            (self.screen_width - panel_width) // 2,
-            (self.screen_height - panel_height) // 2,
-            panel_width,
-            panel_height
-        )
-        pygame.draw.rect(self.screen, (30, 30, 30, 220), panel_rect, border_radius=15)
+        pygame.draw.rect(self.screen, (30, 30, 30, 220), self.panel_rect, border_radius=15)
         
         # Add a border to the panel
-        pygame.draw.rect(self.screen, (100, 100, 100, 150), panel_rect, width=2, border_radius=15)
+        pygame.draw.rect(self.screen, (100, 100, 100, 150), self.panel_rect, width=2, border_radius=15)
         
         # Draw title
         title_surface = self.title_font.render("Game Options", True, self.TEXT_COLOR)
         title_rect = title_surface.get_rect(
-            center=(self.screen_width // 2, panel_rect.top + 50)
+            center=(self.screen_width // 2, self.panel_rect.top + 40)  # Giảm từ 50 xuống 40
         )
         self.screen.blit(title_surface, title_rect)
         
         # Draw subtitle for player color
         color_text = self.subtitle_font.render("Play as:", True, (200, 200, 200))
-        self.screen.blit(color_text, (panel_rect.left + 50, self.play_as_white_button.top - 50))
+        self.screen.blit(color_text, (self.panel_rect.left + 50, self.play_as_white_button.top - 50))
         
         # Draw player color buttons
         mouse_pos = pygame.mouse.get_pos()
@@ -147,7 +171,7 @@ class AIMenu:
         
         # Draw subtitle for difficulty
         diff_text = self.subtitle_font.render("Difficulty:", True, (200, 200, 200))
-        self.screen.blit(diff_text, (panel_rect.left + 50, self.difficulty_buttons[0].top - 50))
+        self.screen.blit(diff_text, (self.panel_rect.left + 50, self.difficulty_buttons[0].top - 50))
         
         # Draw difficulty buttons
         diff_labels = ["1", "2", "3", "4", "5"]
@@ -169,12 +193,6 @@ class AIMenu:
         
         # Draw start button
         start_color = self.BUTTON_HOVER_COLOR if self.start_button.collidepoint(mouse_pos) else self.BUTTON_COLOR
-        
-        # Add shadow for 3D effect
-        shadow_rect = self.start_button.copy()
-        shadow_rect.x += 4
-        shadow_rect.y += 4
-        pygame.draw.rect(self.screen, (20, 20, 20), shadow_rect, border_radius=12)
         
         # Main button
         pygame.draw.rect(self.screen, start_color, self.start_button, border_radius=12)
