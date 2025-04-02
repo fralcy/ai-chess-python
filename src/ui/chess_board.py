@@ -176,6 +176,10 @@ class ChessBoard:
                     self.selected_pos = None
                     self.possible_moves = []
                     self.promotion_menu = None  # Close the promotion menu
+                    
+                    # Gọi AI đi nếu cần
+                    if self.use_ai and not self.game_state.is_game_over() and self.game_state.current_player == self.ai_player.player_color:
+                        self.make_ai_move()
                 return
 
         col = pos[0] // self.SQUARE_SIZE
@@ -189,6 +193,7 @@ class ChessBoard:
             # If a piece is already selected
             if self.selected_pos:
                 # Check if clicked position is in possible moves
+                move_executed = False
                 for move in self.possible_moves:
                     if move.to_pos == clicked_pos:
                         # Check if the move is a promotion
@@ -201,9 +206,16 @@ class ChessBoard:
                             return
                         # Execute the move
                         self.game_state.make_move(move)
+                        move_executed = True
                         self.selected_pos = None
                         self.possible_moves = []
-                        return
+                        break
+
+                if move_executed:
+                    # Gọi AI đi nếu cần
+                    if self.use_ai and not self.game_state.is_game_over() and self.game_state.current_player == self.ai_player.player_color:
+                        self.make_ai_move()
+                    return
 
                 # If clicked on the same piece, deselect it
                 if self.selected_pos == clicked_pos:
@@ -225,11 +237,6 @@ class ChessBoard:
             elif piece and piece.color == self.game_state.current_player:
                 self.selected_pos = clicked_pos
                 self.possible_moves = list(self.game_state.legal_moves_for_piece(clicked_pos))
-        # Sau khi người chơi đã thực hiện nước đi, kiểm tra xem game có kết thúc không
-        if self.use_ai and not self.game_state.is_game_over():
-            # Nếu đến lượt AI, yêu cầu AI thực hiện nước đi
-            if self.game_state.current_player == self.ai_player.player_color:
-                self.make_ai_move()
     
     def draw(self):
         """Draw the complete chess board with pieces and highlights."""
@@ -313,33 +320,36 @@ class ChessBoard:
         
         # Tạo một thread riêng để AI tính toán, không làm đơ giao diện
         def ai_move_thread():
-            # Để AI chọn nước đi
-            move = self.ai_player.choose_move(self.game_state)
-            
-            # Thực hiện nước đi nếu tìm được
-            if move:
-                # Kiểm tra xem nước đi có phải là phong cấp tốt không
-                if move.type == MoveType.PAWN_PROMOTION:
-                    # AI sẽ chọn phong cấp tốt thành quân gì
-                    from logic.piece_type import PieceType
-                    from logic.moves.pawn_promotion import PawnPromotion
-                    
-                    # AI thường chọn phong cấp thành Hậu
-                    updated_move = PawnPromotion(
-                        move.from_pos,
-                        move.to_pos,
-                        PieceType.QUEEN
-                    )
-                    self.game_state.make_move(updated_move)
-                else:
-                    self.game_state.make_move(move)
-            
-            # Đánh dấu AI đã nghĩ xong
-            self.ai_thinking = False
-            
-            # Reset selected position và possible moves
-            self.selected_pos = None
-            self.possible_moves = []
+            try:
+                # Để AI chọn nước đi
+                move = self.ai_player.choose_move(self.game_state)
+                
+                # Thực hiện nước đi nếu tìm được
+                if move:
+                    # Kiểm tra xem nước đi có phải là phong cấp tốt không
+                    if move.type == MoveType.PAWN_PROMOTION:
+                        # Gọi phương thức handle_promotion để AI chọn quân phong cấp
+                        promotion_piece = self.ai_player.handle_promotion(
+                            self.game_state, move.from_pos, move.to_pos)
+                        
+                        # Cập nhật nước đi với quân phong cấp đã chọn
+                        from logic.moves.pawn_promotion import PawnPromotion
+                        updated_move = PawnPromotion(
+                            move.from_pos,
+                            move.to_pos,
+                            promotion_piece
+                        )
+                        self.game_state.make_move(updated_move)
+                    else:
+                        self.game_state.make_move(move)
+                
+            finally:
+                # Đánh dấu AI đã nghĩ xong
+                self.ai_thinking = False
+                
+                # Reset selected position và possible moves
+                self.selected_pos = None
+                self.possible_moves = []
         
         # Tạo và bắt đầu thread
         ai_thread = threading.Thread(target=ai_move_thread)
