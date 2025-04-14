@@ -7,6 +7,7 @@ from src.logic.position import Position
 from src.logic.player import Player
 from src.logic.piece_type import PieceType
 from src.logic_engine.engine import LogicEngine
+from src.logic_engine.predicates import ChessPredicates
 
 
 class LogicBoard:
@@ -22,6 +23,10 @@ class LogicBoard:
             engine: An existing LogicEngine instance, or None to create a new one
         """
         self.engine = engine if engine is not None else LogicEngine()
+        
+        # Add opponent relationship facts
+        self.engine.assert_fact(ChessPredicates.OPPONENT, Player.WHITE, Player.BLACK)
+        self.engine.assert_fact(ChessPredicates.OPPONENT, Player.BLACK, Player.WHITE)
     
     def clear(self):
         """Clear all facts about the board."""
@@ -156,54 +161,101 @@ class LogicBoard:
         
         piece_type, player = piece
         
-        # Remove any piece at the destination (capture)
-        if not self.is_square_empty(to_pos):
-            var_type = self.engine.variable("Type")
-            var_player = self.engine.variable("Player")
+        # Check for special moves
+        from src.logic_engine.special_moves.execute_special_moves import (
+            execute_castle, execute_en_passant, execute_promotion, move_piece as execute_move)
+        
+        # Check for castling
+        var_side = self.engine.variable("Side")
+        castle_results = self.engine.query(
+            ChessPredicates.CAN_CASTLE,
+            player, var_side, from_pos.row, from_pos.column, to_pos.row, to_pos.column
+        )
+        
+        if castle_results:
+            # Execute castling move
+            castle_side = castle_results[0].get("Side")
+            execute_castle(self.engine, player, castle_side, 
+                        from_pos.row, from_pos.column, to_pos.row, to_pos.column)
             
-            results = self.engine.query(
-                "piece_at", var_type, var_player, to_pos.row, to_pos.column)
+            # Switch current player
+            current_player = self.get_current_player()
+            next_player = current_player.opponent()
+            self.set_current_player(next_player)
             
-            if results:
-                binding = results[0]
-                captured_type = binding.get("Type")
-                captured_player = binding.get("Player")
-                
-                self.engine.retract_fact(
-                    "piece_at", captured_type, captured_player, 
-                    to_pos.row, to_pos.column)
-                
-                self.engine.retract_fact(
-                    "has_moved", captured_type, captured_player,
-                    to_pos.row, to_pos.column, True)
+            return True
         
-        # Remove piece from original position
-        self.engine.retract_fact(
-            "piece_at", piece_type, player, from_pos.row, from_pos.column)
+        # Check for en passant
+        en_passant_results = self.engine.query(
+            ChessPredicates.CAN_EN_PASSANT,
+            player, from_pos.row, from_pos.column, to_pos.row, to_pos.column
+        )
         
-        # Remove old has_moved fact
-        var_moved = self.engine.variable("Moved")
-        results = self.engine.query(
-            "has_moved", piece_type, player, from_pos.row, from_pos.column, var_moved)
+        if en_passant_results:
+            # Execute en passant capture
+            execute_en_passant(self.engine, player, 
+                            from_pos.row, from_pos.column, to_pos.row, to_pos.column)
+            
+            # Switch current player
+            current_player = self.get_current_player()
+            next_player = current_player.opponent()
+            self.set_current_player(next_player)
+            
+            return True
         
-        if results:
-            binding = results[0]
-            moved = binding.get("Moved")
-            self.engine.retract_fact(
-                "has_moved", piece_type, player, from_pos.row, from_pos.column, moved)
+        # Check for promotion
+        var_new_type = self.engine.variable("NewType")
+        promotion_results = self.engine.query(
+            ChessPredicates.CAN_PROMOTE,
+            player, from_pos.row, from_pos.column, to_pos.row, to_pos.column, var_new_type
+        )
         
-        # Place piece in new position
-        self.engine.assert_fact(
-            "piece_at", piece_type, player, to_pos.row, to_pos.column)
+        if promotion_results:
+            # Default to queen promotion
+            new_type = promotion_results[0].get("NewType")
+            execute_promotion(self.engine, player, 
+                            from_pos.row, from_pos.column, to_pos.row, to_pos.column, new_type)
+            
+            # Switch current player
+            current_player = self.get_current_player()
+            next_player = current_player.opponent()
+            self.set_current_player(next_player)
+            
+            return True
         
-        # Mark as moved
-        self.engine.assert_fact(
-            "has_moved", piece_type, player, to_pos.row, to_pos.column, True)
-        
-        # Switch current player
-        current_player = self.get_current_player()
-        next_player = current_player.opponent()
-        self.set_current_player(next_player)
+        # Regular move if no special moves apply
+        if not castle_results and not en_passant_results and not promotion_results:
+            execute_move(self.engine, piece_type, player, 
+                        from_pos.row, from_pos.column, to_pos.row, to_pos.column)
+            
+            # If this was a pawn and it made a double move, record the skipped position for en passant
+            if piece_type == PieceType.PAWN:
+                row_diff = abs(to_pos.row - from_pos.row)
+                if row_diff == 2:
+                    # Record the skipped position
+                    skipped_row = (from_pos.row + to_pos.row) // 2
+                    skipped_col = from_pos.column
+                    self.engine.assert_fact(ChessPredicates.PAWN_SKIP, player, skipped_row, skipped_col)
+            
+            # Clear any existing pawn skip positions for the moving player
+            var_row = self.engine.variable("Row")
+            var_col = self.engine.variable("Col")
+            skip_results = self.engine.query(
+                ChessPredicates.PAWN_SKIP, player, var_row, var_col
+            )
+            
+            for binding in skip_results:
+                row = binding.get("Row")
+                col = binding.get("Col")
+                # Skip removing the one we just added
+                if not (piece_type == PieceType.PAWN and abs(to_pos.row - from_pos.row) == 2 and 
+                    row == (from_pos.row + to_pos.row) // 2 and col == from_pos.column):
+                    self.engine.retract_fact(ChessPredicates.PAWN_SKIP, player, row, col)
+            
+            # Switch current player
+            current_player = self.get_current_player()
+            next_player = current_player.opponent()
+            self.set_current_player(next_player)
         
         return True
     
@@ -261,8 +313,48 @@ class LogicBoard:
             skip_pos = board.get_pawn_skip_position(player)
             if skip_pos:
                 self.engine.assert_fact("pawn_skip", player, skip_pos.row, skip_pos.column)
-    
+
+    def setup_check_detection(self):
+        """Setup rules for detecting check and square attacks."""
+        from src.logic_engine.square_attacked import setup_square_attacked_predicate
+        
+        # Setup square attacked predicate
+        setup_square_attacked_predicate(self.engine)
+        
+        var_player = self.engine.variable("Player")
+        var_king_row = self.engine.variable("KingRow")
+        var_king_col = self.engine.variable("KingCol")
+        var_opponent = self.engine.variable("Opponent")
+        
+        # Player is in check if opponent can attack their king's square
+        head = (ChessPredicates.IN_CHECK, 
+                (var_player))
+        
+        body = [
+            # Get the opponent player
+            ("opponent", (var_player, var_opponent)),
+            
+            # Find the player's king
+            (ChessPredicates.PIECE_AT, 
+             (PieceType.KING, var_player, var_king_row, var_king_col)),
+            
+            # Check if king's square is attacked
+            (ChessPredicates.SQUARE_ATTACKED, 
+             (var_opponent, var_king_row, var_king_col))
+        ]
+        
+        self.engine.add_rule(head, body)
+
     def setup_rules(self):
         """Set up the rules for the chess game."""
-        # Rules for determining valid moves will be added in Commit 3 and 4
-        pass
+        from src.logic_engine.movement_rules import setup_movement_rules
+        from src.logic_engine.special_moves import setup_special_moves
+        
+        # Setup basic movement rules
+        setup_movement_rules(self.engine)
+        
+        # Setup special move rules (castling, en passant, promotion)
+        setup_special_moves(self.engine)
+        
+        # Setup check and checkmate detection
+        self.setup_check_detection()

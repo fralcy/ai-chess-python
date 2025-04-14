@@ -21,11 +21,15 @@ Defines the standard predicates used in the logic representation.
 # in_check(Player) - Indicates that a player is in check
 # checkmate(Player) - Indicates that a player is in checkmate
 # stalemate(Player) - Indicates that a player is in stalemate
+# square_attacked(AttackingPlayer, Row, Col) - Indicates that a square is under attack by a player
 
-# Special move predicates - to be implemented in Commit 4
-# can_castle(Player, Side) - Indicates that a player can castle on a side (kingside or queenside)
+# Special move predicates
+# can_castle(Player, Side, FromRow, FromCol, ToRow, ToCol) - Indicates that a player can castle on a side
 # can_en_passant(Player, FromRow, FromCol, ToRow, ToCol) - Indicates that a pawn can make an en passant capture
 # can_promote(Player, FromRow, FromCol, ToRow, ToCol, NewType) - Indicates that a pawn can be promoted
+
+# Utility predicates
+# opponent(Player, OpponentPlayer) - Gets the opponent of a player
 
 class ChessPredicates:
     """
@@ -49,8 +53,12 @@ class ChessPredicates:
     IN_CHECK = "in_check"
     CHECKMATE = "checkmate"
     STALEMATE = "stalemate"
+    SQUARE_ATTACKED = "square_attacked"
     
     # Special move predicates
     CAN_CASTLE = "can_castle"
     CAN_EN_PASSANT = "can_en_passant"
     CAN_PROMOTE = "can_promote"
+    
+    # Utility predicates
+    OPPONENT = "opponent"
