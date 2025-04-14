@@ -11,15 +11,16 @@ Defines the standard predicates used in the logic representation.
 # En passant predicates
 # pawn_skip(Player, Row, Col) - Represents a position where a pawn has skipped and can be captured by en passant
 
+# Movement predicates
+# piece_move(Type, Player, FromRow, FromCol, ToRow, ToCol) - Indicates a valid move pattern for a piece
+# piece_capture(Type, Player, FromRow, FromCol, ToRow, ToCol) - Indicates a valid capture pattern for a piece
+# is_blocked(FromRow, FromCol, ToRow, ToCol) - Indicates that a move path is blocked
+# can_move(Type, Player, FromRow, FromCol, ToRow, ToCol) - Indicates that a piece can move to a position
+
 # Check and checkmate predicates
 # in_check(Player) - Indicates that a player is in check
 # checkmate(Player) - Indicates that a player is in checkmate
 # stalemate(Player) - Indicates that a player is in stalemate
-
-# Move predicates - to be implemented in Commit 3
-# can_move(Type, Player, FromRow, FromCol, ToRow, ToCol) - Indicates that a piece can move to a position
-# can_capture(Type, Player, FromRow, FromCol, ToRow, ToCol) - Indicates that a piece can capture at a position
-# is_blocked(FromRow, FromCol, ToRow, ToCol) - Indicates that a move path is blocked
 
 # Special move predicates - to be implemented in Commit 4
 # can_castle(Player, Side) - Indicates that a player can castle on a side (kingside or queenside)
@@ -38,15 +39,16 @@ class ChessPredicates:
     HAS_MOVED = "has_moved"
     PAWN_SKIP = "pawn_skip"
     
+    # Movement predicates
+    PIECE_MOVE = "piece_move"
+    PIECE_CAPTURE = "piece_capture"
+    IS_BLOCKED = "is_blocked"
+    CAN_MOVE = "can_move"
+    
     # Game state predicates
     IN_CHECK = "in_check"
     CHECKMATE = "checkmate"
     STALEMATE = "stalemate"
-    
-    # Move predicates
-    CAN_MOVE = "can_move"
-    CAN_CAPTURE = "can_capture"
-    IS_BLOCKED = "is_blocked"
     
     # Special move predicates
     CAN_CASTLE = "can_castle"
