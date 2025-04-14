@@ -65,6 +65,11 @@ class ChessPredicates:
     MOVE_RESULTS_IN_CHECK = "move_results_in_check"
     RESOLVES_CHECK = "resolves_check"
     
+    # Game end condition predicates
+    INSUFFICIENT_MATERIAL = "insufficient_material"
+    FIFTY_MOVE_RULE = "fifty_move_rule"
+    THREEFOLD_REPETITION = "threefold_repetition"
+    
     # Special move predicates
     CAN_CASTLE = "can_castle"
     CAN_EN_PASSANT = "can_en_passant"

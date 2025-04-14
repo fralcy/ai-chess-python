@@ -9,6 +9,8 @@ from src.logic.end_reason import EndReason
 from src.logic_engine.logic_board import LogicBoard
 from src.logic_engine.board_adapter import BoardAdapter
 from src.logic_engine.predicates import ChessPredicates
+from src.logic_engine.game_end_conditions import setup_game_end_conditions, register_game_end_handlers
+from src.logic_engine.checkmate import setup_checkmate_stalemate_rules
 
 
 class LogicGameState:
@@ -30,6 +32,7 @@ class LogicGameState:
         self._result = None
         self._no_capture_or_pawn_move = 0
         self._state_history = {}
+        self._position_counts = {}
         
         if board:
             # Sync from an existing board
@@ -43,6 +46,18 @@ class LogicGameState:
         
         # Setup rules for the chess game
         self.logic_board.setup_rules()
+        
+        # Setup checkmate and stalemate rules
+        setup_checkmate_stalemate_rules(self.logic_board.engine)
+        
+        # Setup game end condition rules
+        setup_game_end_conditions(self.logic_board.engine)
+        
+        # Register handlers for game end conditions
+        register_game_end_handlers(self.logic_board.engine)
+        
+        # Register additional handlers for state tracking
+        self._register_state_tracking_handlers()
         
         # Initialize state string and history
         self._update_state_string()
@@ -76,20 +91,33 @@ class LogicGameState:
         """
         return self.board_adapter.convert_to_traditional()
     
-    def legal_moves_for_piece(self, pos):
-        """
-        Get all legal moves for a piece at the given position.
-        To be implemented in Commit 3.
+    def _register_state_tracking_handlers(self):
+        """Register handlers for tracking game state."""
+        # Handler for no_capture_or_pawn_move_count predicate
+        def no_capture_or_pawn_move_count(args, bindings):
+            count_var = args[0]
+            bindings[count_var.name] = self._no_capture_or_pawn_move
+            return True
         
-        Args:
-            pos: The position of the piece
+        # Handler for position_count predicate
+        def position_count(args, bindings):
+            position_var = args[0]
+            count_var = args[1]
             
-        Returns:
-            A list of legal moves
-        """
-        # This will be implemented using logic programming in Commit 3
-        # For now, return an empty list
-        return []
+            # If there's a position with count >= 3, return it
+            for position, count in self._position_counts.items():
+                if count >= 3:
+                    bindings[position_var.name] = position
+                    bindings[count_var.name] = count
+                    return True
+            
+            return False
+        
+        # Register the handlers
+        self.logic_board.engine.register_predicate_handler(
+            "no_capture_or_pawn_move_count", no_capture_or_pawn_move_count)
+        self.logic_board.engine.register_predicate_handler(
+            "position_count", position_count)
     
     def make_move(self, move):
         """
@@ -105,7 +133,7 @@ class LogicGameState:
         capture_or_pawn = move.execute(board)
         if capture_or_pawn:
             self._no_capture_or_pawn_move = 0
-            self._state_history.clear()
+            self._position_counts.clear()  # Clear position history on irreversible move
         else:
             self._no_capture_or_pawn_move += 1
         
@@ -126,6 +154,13 @@ class LogicGameState:
         from src.logic.state_string import StateString
         self._state_string = str(StateString(self.current_player, board))
         
+        # Update position count
+        if self._state_string in self._position_counts:
+            self._position_counts[self._state_string] += 1
+        else:
+            self._position_counts[self._state_string] = 1
+        
+        # Update state history (for compatibility with original code)
         if self._state_string in self._state_history:
             self._state_history[self._state_string] += 1
         else:
@@ -240,17 +275,29 @@ class LogicGameState:
             return
         
         # Check for insufficient material
-        if self.logic_board.insufficient_material():
+        insufficient_material_results = self.logic_board.engine.query(
+            ChessPredicates.INSUFFICIENT_MATERIAL
+        )
+        
+        if insufficient_material_results:
             self._result = Result.draw(EndReason.INSUFFICIENT_MATERIAL)
             return
         
         # Check for fifty-move rule
-        if self.fifty_moves_rule():
+        fifty_move_results = self.logic_board.engine.query(
+            ChessPredicates.FIFTY_MOVE_RULE
+        )
+        
+        if fifty_move_results:
             self._result = Result.draw(EndReason.FIFTY_MOVE_RULE)
             return
         
         # Check for threefold repetition
-        if self.threefold_repetition():
+        threefold_results = self.logic_board.engine.query(
+            ChessPredicates.THREEFOLD_REPETITION
+        )
+        
+        if threefold_results:
             self._result = Result.draw(EndReason.THREEFOLD_REPETITION)
             return
     
