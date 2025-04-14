@@ -8,6 +8,7 @@ from src.logic.result import Result
 from src.logic.end_reason import EndReason
 from src.logic_engine.logic_board import LogicBoard
 from src.logic_engine.board_adapter import BoardAdapter
+from src.logic_engine.predicates import ChessPredicates
 
 
 class LogicGameState:
@@ -133,7 +134,6 @@ class LogicGameState:
     def all_legal_moves_for(self, player):
         """
         Get all legal moves for a player.
-        To be implemented in Commit 3.
         
         Args:
             player: The player to get moves for
@@ -141,17 +141,57 @@ class LogicGameState:
         Returns:
             A list of legal moves
         """
-        # This will be implemented using logic programming in Commit 3
-        # For now, convert to traditional board and use its method
-        board = self.to_traditional_board()
-        from src.logic.game_state import GameState
-        game_state = GameState(board, player)
-        return game_state.all_legal_moves_for(player)
+        # Use variables to find all piece positions
+        var_piece_type = self.logic_board.engine.variable("PieceType")
+        var_from_row = self.logic_board.engine.variable("FromRow")
+        var_from_col = self.logic_board.engine.variable("FromCol")
+        var_to_row = self.logic_board.engine.variable("ToRow")
+        var_to_col = self.logic_board.engine.variable("ToCol")
+        
+        # Find all pieces of the player
+        piece_positions = self.logic_board.engine.query(
+            ChessPredicates.PIECE_AT,
+            var_piece_type, player, var_from_row, var_from_col
+        )
+        
+        all_moves = []
+        
+        # For each piece position, find all legal moves
+        for binding in piece_positions:
+            piece_type = binding.get("PieceType")
+            from_row = binding.get("FromRow")
+            from_col = binding.get("FromCol")
+            
+            # Find all legal moves for this piece
+            moves = self.logic_board.engine.query(
+                ChessPredicates.CAN_MOVE,
+                piece_type, player, from_row, from_col, var_to_row, var_to_col
+            )
+            
+            for move_binding in moves:
+                to_row = move_binding.get("ToRow")
+                to_col = move_binding.get("ToCol")
+                
+                # Check if the move would leave the king in check
+                check_results = self.logic_board.engine.query(
+                    ChessPredicates.LEAVES_IN_CHECK,
+                    player, piece_type, from_row, from_col, to_row, to_col
+                )
+                
+                # Only add the move if it doesn't leave the king in check
+                if not check_results:
+                    # Convert to a Move object - will need to determine the type of move
+                    from src.logic.position import Position
+                    from src.logic.moves.normal_move import NormalMove
+                    from_pos = Position(from_row, from_col)
+                    to_pos = Position(to_row, to_col)
+                    all_moves.append(NormalMove(from_pos, to_pos))
+        
+        return all_moves
     
     def is_in_check(self, player):
         """
         Check if a player is in check.
-        To be implemented in Commit 5.
         
         Args:
             player: The player to check
@@ -159,10 +199,12 @@ class LogicGameState:
         Returns:
             True if the player is in check, False otherwise
         """
-        # This will be implemented using logic programming in Commit 5
-        # For now, convert to traditional board and use its method
-        board = self.to_traditional_board()
-        return board.is_in_check(player)
+        results = self.logic_board.engine.query(
+            ChessPredicates.IN_CHECK,
+            player
+        )
+        
+        return len(results) > 0
     
     def is_game_over(self):
         """
@@ -175,15 +217,42 @@ class LogicGameState:
     
     def check_for_game_over(self):
         """Check for game over conditions and update the result if needed."""
-        # This will be implemented using logic programming in Commit 5
-        # For now, convert to traditional board and use its methods
-        board = self.to_traditional_board()
-        from src.logic.game_state import GameState
-        game_state = GameState(board, self.current_player)
-        game_state.check_for_game_over()
+        # Check for checkmate
+        checkmate_results = self.logic_board.engine.query(
+            ChessPredicates.CHECKMATE,
+            self.current_player
+        )
         
-        if game_state.is_game_over():
-            self._result = game_state.result
+        if checkmate_results:
+            # Game over by checkmate - opponent wins
+            self._result = Result.win(self.current_player.opponent())
+            return
+        
+        # Check for stalemate
+        stalemate_results = self.logic_board.engine.query(
+            ChessPredicates.STALEMATE,
+            self.current_player
+        )
+        
+        if stalemate_results:
+            # Game over by stalemate - draw
+            self._result = Result.draw(EndReason.STALEMATE)
+            return
+        
+        # Check for insufficient material
+        if self.logic_board.insufficient_material():
+            self._result = Result.draw(EndReason.INSUFFICIENT_MATERIAL)
+            return
+        
+        # Check for fifty-move rule
+        if self.fifty_moves_rule():
+            self._result = Result.draw(EndReason.FIFTY_MOVE_RULE)
+            return
+        
+        # Check for threefold repetition
+        if self.threefold_repetition():
+            self._result = Result.draw(EndReason.THREEFOLD_REPETITION)
+            return
     
     def fifty_moves_rule(self):
         """

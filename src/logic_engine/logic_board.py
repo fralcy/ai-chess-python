@@ -6,7 +6,9 @@ This module converts the chess board state into logical facts and predicates.
 from src.logic.position import Position
 from src.logic.player import Player
 from src.logic.piece_type import PieceType
+from src.logic_engine.checkmate import setup_checkmate_stalemate_rules
 from src.logic_engine.engine import LogicEngine
+from src.logic_engine.move_check import setup_move_check_rules
 from src.logic_engine.predicates import ChessPredicates
 
 
@@ -358,3 +360,178 @@ class LogicBoard:
         
         # Setup check and checkmate detection
         self.setup_check_detection()
+
+        # Setup checkmate and stalemate rules
+        setup_checkmate_stalemate_rules(self.engine)
+        
+        # Setup move validation to prevent leaving king in check
+        setup_move_check_rules(self.engine)
+        
+        # Setup functions for simulating moves
+        self.setup_move_simulation()
+
+    def setup_move_simulation(self):
+        """
+        Setup handlers for the MOVE_RESULTS_IN_CHECK predicate.
+        This predicate needs to be handled specially since it requires
+        simulating a move on a copy of the board.
+        """
+        var_player = self.engine.variable("Player")
+        var_piece_type = self.engine.variable("PieceType")
+        var_from_row = self.engine.variable("FromRow")
+        var_from_col = self.engine.variable("FromCol")
+        var_to_row = self.engine.variable("ToRow")
+        var_to_col = self.engine.variable("ToCol")
+        
+        # Define a handler for the MOVE_RESULTS_IN_CHECK predicate
+        def move_results_in_check_handler(args, bindings):
+            # Extract values from arguments
+            player = args[0]
+            piece_type = args[1]
+            from_row = args[2]
+            from_col = args[3]
+            to_row = args[4]
+            to_col = args[5]
+            
+            # Create a copy of the board to simulate the move
+            board_copy = self.copy()
+            
+            # Simulate the move on the copy
+            from_pos = Position(from_row, from_col)
+            to_pos = Position(to_row, to_col)
+            board_copy.move_piece_without_validation(from_pos, to_pos)
+            
+            # Check if the player's king is in check after the move
+            results = board_copy.engine.query(
+                ChessPredicates.IN_CHECK,
+                player
+            )
+            
+            # Return True if the king is in check, False otherwise
+            return len(results) > 0
+        
+        # Register the handler for the MOVE_RESULTS_IN_CHECK predicate
+        self.engine.register_predicate_handler(
+            ChessPredicates.MOVE_RESULTS_IN_CHECK,
+            move_results_in_check_handler
+        )
+    
+    def move_piece_without_validation(self, from_pos, to_pos):
+        """
+        Move a piece from one position to another without validation.
+        Used for simulating moves to check if they would leave the king in check.
+        
+        Args:
+            from_pos: The current position of the piece (Position object)
+            to_pos: The destination position (Position object)
+            
+        Returns:
+            True if the move was successful, False otherwise
+        """
+        # Similar to move_piece but without validation and turn switching
+        piece = self.get_piece_at(from_pos)
+        if not piece:
+            return False
+        
+        piece_type, player = piece
+        
+        # Just make a basic move without special move checks or turn switching
+        from src.logic_engine.special_moves.execute_special_moves import move_piece as execute_move
+        execute_move(self.engine, piece_type, player, 
+                   from_pos.row, from_pos.column, to_pos.row, to_pos.column)
+        
+        return True
+    
+    def copy(self):
+        """
+        Create a deep copy of the logical board.
+        
+        Returns:
+            A new LogicBoard instance with the same state
+        """
+        # Create a new logic board
+        new_board = LogicBoard()
+        
+        # Copy all facts
+        for predicate, args in self.engine.kb.facts:
+            new_board.engine.assert_fact(predicate, *args)
+        
+        # We don't need to copy rules since they'll be added when setup_rules is called
+        
+        return new_board
+    
+    def insufficient_material(self):
+        """
+        Check if there is insufficient material for checkmate.
+        
+        Returns:
+            True if there is insufficient material, False otherwise
+        """
+        # Count pieces on the board
+        var_piece_type = self.engine.variable("PieceType")
+        var_player = self.engine.variable("Player")
+        var_row = self.engine.variable("Row")
+        var_col = self.engine.variable("Col")
+        
+        # Get all pieces
+        pieces = self.engine.query(
+            ChessPredicates.PIECE_AT,
+            var_piece_type, var_player, var_row, var_col
+        )
+        
+        # Count the pieces by type and player
+        piece_count = {}
+        for binding in pieces:
+            piece_type = binding.get("PieceType")
+            player = binding.get("Player")
+            
+            # Initialize counters if needed
+            if player not in piece_count:
+                piece_count[player] = {}
+            if piece_type not in piece_count[player]:
+                piece_count[player][piece_type] = 0
+            
+            # Increment the counter
+            piece_count[player][piece_type] += 1
+        
+        # Check for insufficient material scenarios
+        
+        # King vs King
+        if len(pieces) == 2:
+            return True
+        
+        # King + Bishop vs King or King + Knight vs King
+        if len(pieces) == 3:
+            for player in piece_count:
+                # Check if player has only a king and a bishop/knight
+                if len(piece_count[player]) == 2:
+                    if (PieceType.BISHOP in piece_count[player] and piece_count[player][PieceType.BISHOP] == 1) or \
+                       (PieceType.KNIGHT in piece_count[player] and piece_count[player][PieceType.KNIGHT] == 1):
+                        return True
+        
+        # King + Bishop vs King + Bishop (same color bishops)
+        if len(pieces) == 4:
+            white_has_bishop = piece_count.get(Player.WHITE, {}).get(PieceType.BISHOP, 0) == 1
+            black_has_bishop = piece_count.get(Player.BLACK, {}).get(PieceType.BISHOP, 0) == 1
+            
+            if white_has_bishop and black_has_bishop:
+                white_bishop_pos = None
+                black_bishop_pos = None
+                
+                # Find the bishop positions
+                for binding in pieces:
+                    if binding.get("PieceType") == PieceType.BISHOP:
+                        if binding.get("Player") == Player.WHITE:
+                            white_bishop_pos = (binding.get("Row"), binding.get("Col"))
+                        else:
+                            black_bishop_pos = (binding.get("Row"), binding.get("Col"))
+                
+                # Check if bishops are on same color squares
+                if white_bishop_pos and black_bishop_pos:
+                    white_square_color = (white_bishop_pos[0] + white_bishop_pos[1]) % 2
+                    black_square_color = (black_bishop_pos[0] + black_bishop_pos[1]) % 2
+                    
+                    if white_square_color == black_square_color:
+                        return True
+        
+        return False

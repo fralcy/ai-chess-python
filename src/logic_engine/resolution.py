@@ -6,22 +6,25 @@ Implements SLD resolution for logic queries.
 from src.logic_engine.unification import unify, substitute, Variable
 
 
-def resolve(goal, knowledge_base, max_depth=100):
+def resolve(goal, knowledge_base, predicate_handlers=None, max_depth=100):
     """
     Resolve a goal using SLD resolution.
     
     Args:
         goal: The goal to resolve (a list of facts)
         knowledge_base: The knowledge base to use
+        predicate_handlers: Dictionary of handlers for special predicates
         max_depth: Maximum recursion depth
         
     Returns:
         A list of solutions (variable bindings)
     """
-    return resolve_goals(goal, knowledge_base, {}, max_depth)
+    if not isinstance(goal, list):
+        goal = [goal]
+    return resolve_goals(goal, knowledge_base, {}, predicate_handlers or {}, max_depth)
 
 
-def resolve_goals(goals, kb, bindings, max_depth):
+def resolve_goals(goals, kb, bindings, predicate_handlers, max_depth):
     """
     Resolve a list of goals.
     
@@ -29,6 +32,7 @@ def resolve_goals(goals, kb, bindings, max_depth):
         goals: List of goals to resolve
         kb: Knowledge base
         bindings: Current variable bindings
+        predicate_handlers: Dictionary of handlers for special predicates
         max_depth: Maximum recursion depth
         
     Returns:
@@ -46,12 +50,26 @@ def resolve_goals(goals, kb, bindings, max_depth):
     # Try to resolve the first goal
     predicate, args = goal
     
+    # If there is a handler for this predicate, use it
+    if predicate in predicate_handlers:
+        # Substitute any variables in the args
+        bound_args = [substitute(arg, bindings) for arg in args]
+        
+        # Call the handler with the bound args
+        result = predicate_handlers[predicate](bound_args, bindings)
+        
+        # If the handler returns True, the goal is satisfied
+        if result:
+            solutions.extend(resolve_goals(rest_goals, kb, bindings, predicate_handlers, max_depth - 1))
+        
+        return solutions
+    
     # First, try facts
     for fact in kb.get_facts(predicate):
         _, fact_args = fact
         new_bindings = unify(args, fact_args, bindings.copy())
         if new_bindings is not None:
-            solutions.extend(resolve_goals(rest_goals, kb, new_bindings, max_depth - 1))
+            solutions.extend(resolve_goals(rest_goals, kb, new_bindings, predicate_handlers, max_depth - 1))
     
     # Then, try rules
     for rule in kb.get_rules(predicate):
@@ -66,7 +84,7 @@ def resolve_goals(goals, kb, bindings, max_depth):
         if new_bindings is not None:
             # Add the body goals to the goal list
             new_goals = body_fresh + rest_goals
-            solutions.extend(resolve_goals(new_goals, kb, new_bindings, max_depth - 1))
+            solutions.extend(resolve_goals(new_goals, kb, new_bindings, predicate_handlers, max_depth - 1))
     
     return solutions
 

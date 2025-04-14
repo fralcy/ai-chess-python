@@ -15,6 +15,7 @@ class LogicEngine:
     
     def __init__(self):
         self.kb = KnowledgeBase()
+        self.predicate_handlers = {}
     
     def assert_fact(self, predicate, *args):
         """
@@ -48,6 +49,16 @@ class LogicEngine:
         head = (head_predicate, head_args)
         return self.kb.add_rule(head, body)
     
+    def register_predicate_handler(self, predicate_name, handler_function):
+        """
+        Register a handler function for a special predicate.
+        
+        Args:
+            predicate_name: The name of the predicate
+            handler_function: A function that takes (args, bindings) and returns True/False
+        """
+        self.predicate_handlers[predicate_name] = handler_function
+    
     def query(self, predicate, *args):
         """
         Query the knowledge base.
@@ -60,7 +71,7 @@ class LogicEngine:
             A list of solutions (variable bindings)
         """
         goal = (predicate, args)
-        return resolve([goal], self.kb)
+        return resolve(goal, self.kb, self.predicate_handlers)
     
     def query_all(self, goals):
         """
@@ -72,7 +83,7 @@ class LogicEngine:
         Returns:
             A list of solutions (variable bindings)
         """
-        return resolve(goals, self.kb)
+        return resolve(goals, self.kb, self.predicate_handlers)
     
     def clear(self):
         """Clear the knowledge base."""

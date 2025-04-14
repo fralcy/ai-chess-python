@@ -22,6 +22,11 @@ Defines the standard predicates used in the logic representation.
 # checkmate(Player) - Indicates that a player is in checkmate
 # stalemate(Player) - Indicates that a player is in stalemate
 # square_attacked(AttackingPlayer, Row, Col) - Indicates that a square is under attack by a player
+# no_legal_moves(Player) - Indicates that a player has no legal moves
+# has_legal_move(Player) - Indicates that a player has at least one legal move
+# leaves_in_check(Player, PieceType, FromRow, FromCol, ToRow, ToCol) - Indicates that a move would leave the king in check
+# move_results_in_check(Player, PieceType, FromRow, FromCol, ToRow, ToCol) - Indicates that a move would result in check
+# resolves_check(Player, PieceType, FromRow, FromCol, ToRow, ToCol) - Indicates that a move would resolve check
 
 # Special move predicates
 # can_castle(Player, Side, FromRow, FromCol, ToRow, ToCol) - Indicates that a player can castle on a side
@@ -54,6 +59,11 @@ class ChessPredicates:
     CHECKMATE = "checkmate"
     STALEMATE = "stalemate"
     SQUARE_ATTACKED = "square_attacked"
+    NO_LEGAL_MOVES = "no_legal_moves"
+    HAS_LEGAL_MOVE = "has_legal_move"
+    LEAVES_IN_CHECK = "leaves_in_check"
+    MOVE_RESULTS_IN_CHECK = "move_results_in_check"
+    RESOLVES_CHECK = "resolves_check"
     
     # Special move predicates
     CAN_CASTLE = "can_castle"
