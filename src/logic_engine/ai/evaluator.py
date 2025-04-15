@@ -3,9 +3,9 @@ Board evaluation module for the minimax algorithm.
 Uses logic programming to evaluate the board position.
 """
 
-from src.logic.player import Player
-from src.logic.piece_type import PieceType
-from src.logic.position import Position
+from src.logic_engine.player import Player
+from src.logic_engine.piece_type import PieceType
+from src.logic_engine.position import Position
 from src.logic_engine.predicates import ChessPredicates
 
 class LogicBoardEvaluator:

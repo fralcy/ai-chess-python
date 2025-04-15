@@ -1,7 +1,7 @@
 import pygame
 import sys
 import os
-from ai.ai_player import AIPlayer
+from logic_engine.ai.ai_player import LogicAIPlayer
 import threading
 import time
 
@@ -10,9 +10,9 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from logic_engine.logic_board import LogicBoard as Board
 from logic_engine.logic_game_state import LogicGameState as GameState
-from logic.player import Player
-from logic.piece_type import PieceType
-from logic.position import Position
+from logic_engine.player import Player
+from logic_engine.piece_type import PieceType
+from logic_engine.position import Position
 from ui.promotion_menu import PromotionMenu
 from ui.pause_menu import PauseMenu
 from ui.option import Option
@@ -208,7 +208,7 @@ class ChessBoard:
             return
         
         # Import MoveType if it's not already imported at the top
-        from logic.move_type import MoveType
+        from logic_engine.move_type import MoveType
         
         if self.promotion_menu:  # Handle promotion menu clicks
             selected_piece_type = self.promotion_menu.handle_click(pygame.event.Event(pygame.MOUSEBUTTONDOWN, {'pos': pos, 'button': 1}))
@@ -222,15 +222,12 @@ class ChessBoard:
                 
                 if promotion_move:
                     # Create a new promotion move with the selected piece type
-                    from logic.moves.pawn_promotion import PawnPromotion
-                    updated_move = PawnPromotion(
-                        promotion_move.from_pos,
-                        promotion_move.to_pos,
-                        selected_piece_type
-                    )
+                    # Create the promotion move
+
+
                     
                     # Execute the promotion move
-                    self.game_state.make_move(updated_move)
+
                     
                     # Reset selection state
                     self.selected_pos = None
@@ -257,22 +254,11 @@ class ChessBoard:
             if self.selected_pos:
                 # Check if clicked position is in possible moves
                 move_executed = False
-                for move in self.possible_moves:
-                    if move.to_pos == clicked_pos:
+
                         # Check if the move is a promotion
-                        if move.type == MoveType.PAWN_PROMOTION:
-                            self.promotion_menu = PromotionMenu(
-                                self.screen,
-                                self.game_state.current_player,
-                                self.SQUARE_SIZE
-                            )
-                            return
+
                         # Execute the move
-                        self.game_state.make_move(move)
-                        move_executed = True
-                        self.selected_pos = None
-                        self.possible_moves = []
-                        break
+
 
                 if move_executed:
                     # Gọi AI đi nếu cần
@@ -368,9 +354,9 @@ class ChessBoard:
         # AI will play the opposite color
         ai_color = Player.BLACK if player_color == Player.WHITE else Player.WHITE
         
-        # Create the AI player using the logic-based adapter
-        from src.logic_engine.ai_adapter import LogicAIAdapter
-        self.ai_player = LogicAIAdapter(ai_color, difficulty)
+        # Create the AI player
+        self.ai_player = LogicAIPlayer(ai_color, difficulty)
+        self.ai_player.set_difficulty(difficulty)
         
         # If AI is White, it will go first
         if ai_color == Player.WHITE:
@@ -395,24 +381,14 @@ class ChessBoard:
                 move = self.ai_player.choose_move(self.game_state)
                 
                 # Execute the move if found
-                if move:
+
                     # Check if the move is a pawn promotion
-                    from src.logic.move_type import MoveType
-                    if move.type == MoveType.PAWN_PROMOTION:
+
                         # Let the AI choose the promotion piece
-                        promotion_piece = self.ai_player.handle_promotion(
-                            self.game_state, move.from_pos, move.to_pos)
+
                         
                         # Create a promotion move with the chosen piece
-                        from src.logic.moves.pawn_promotion import PawnPromotion
-                        updated_move = PawnPromotion(
-                            move.from_pos,
-                            move.to_pos,
-                            promotion_piece
-                        )
-                        self.game_state.make_move(updated_move)
-                    else:
-                        self.game_state.make_move(move)
+
             finally:
                 # Mark AI as done thinking
                 self.ai_thinking = False

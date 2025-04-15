@@ -4,9 +4,9 @@ This module handles all game-ending rules like insufficient material,
 fifty-move rule, and threefold repetition.
 """
 
-from src.logic.piece_type import PieceType
-from src.logic.player import Player
-from src.logic.end_reason import EndReason
+from src.logic_engine.piece_type import PieceType
+from src.logic_engine.player import Player
+from src.logic_engine.end_reason import EndReason
 from src.logic_engine.predicates import ChessPredicates
 
 

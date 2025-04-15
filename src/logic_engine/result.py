@@ -1,5 +1,5 @@
-from logic.player import Player
-from logic.end_reason import EndReason
+from src.logic_engine.player import Player
+from src.logic_engine.end_reason import EndReason
 
 class Result:
     @property

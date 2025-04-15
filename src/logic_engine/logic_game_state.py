@@ -3,11 +3,10 @@ Logic representation of the game state.
 Combines board state with game rules and state tracking.
 """
 
-from player import Player
-from result import Result
-from end_reason import EndReason
+from src.logic_engine.player import Player
+from src.logic_engine.result import Result
+from src.logic_engine.end_reason import EndReason
 from src.logic_engine.logic_board import LogicBoard
-from src.logic_engine.board_adapter import BoardAdapter
 from src.logic_engine.predicates import ChessPredicates
 from src.logic_engine.game_end_conditions import setup_game_end_conditions, register_game_end_handlers
 from src.logic_engine.checkmate import setup_checkmate_stalemate_rules
@@ -28,7 +27,6 @@ class LogicGameState:
             engine: An existing LogicEngine instance, or None to create a new one
         """
         self.logic_board = LogicBoard(engine)
-        self.board_adapter = BoardAdapter(self.logic_board.engine)
         self._result = None
         self._no_capture_or_pawn_move = 0
         self._state_history = {}
@@ -216,11 +214,11 @@ class LogicGameState:
                 # Only add the move if it doesn't leave the king in check
                 if not check_results:
                     # Convert to a Move object - will need to determine the type of move
-                    from src.logic.position import Position
-                    from src.logic.moves.normal_move import NormalMove
-                    from_pos = Position(from_row, from_col)
-                    to_pos = Position(to_row, to_col)
-                    all_moves.append(NormalMove(from_pos, to_pos))
+                    # (e.g., capture, promotion, etc.)
+                    move = self.logic_board.create_move(
+                        piece_type, player, from_row, from_col, to_row, to_col
+                    )
+                    all_moves.append(move)
         
         return all_moves
     

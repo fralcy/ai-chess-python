@@ -7,10 +7,10 @@ with alpha-beta pruning implemented using logic programming.
 import sys
 import time
 import random
-from src.logic.player import Player
-from src.logic.game_state import GameState
-from src.logic.move_type import MoveType
-from src.logic.piece_type import PieceType
+from src.logic_engine.player import Player
+from src.logic_engine.logic_game_state import LogicGameState
+from src.logic_engine.move_type import MoveType
+from src.logic_engine.piece_type import PieceType
 from src.logic_engine.logic_game_state import LogicGameState
 from src.logic_engine.ai.minimax import minimax_logic
 

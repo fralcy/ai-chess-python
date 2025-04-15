@@ -5,7 +5,7 @@ with alpha-beta pruning for chess AI.
 """
 
 import sys
-from src.logic.player import Player
+from src.logic_engine.player import Player
 from src.logic_engine.predicates import ChessPredicates
 from src.logic_engine.logic_board import LogicBoard
 from src.logic_engine.logic_game_state import LogicGameState
