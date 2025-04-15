@@ -234,7 +234,8 @@ class AIMenu:
                 player_color = Player.WHITE if self.player_color == "white" else Player.BLACK
                 return {
                     "player_color": player_color,
-                    "difficulty": self.difficulty
+                    "difficulty": self.difficulty,
+                    "use_logic_ai": True  # Flag to use the logic-based AI
                 }
         
         return None

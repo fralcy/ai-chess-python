@@ -357,53 +357,55 @@ class ChessBoard:
     
     def setup_ai_game(self, player_color, difficulty=3):
         """
-        Thiết lập game với AI.
+        Setup game with AI.
         
         Args:
-            player_color: Màu quân của người chơi
-            difficulty: Độ khó của AI (1-5)
+            player_color: The color of the human player
+            difficulty: The difficulty level of the AI (1-5)
         """
         self.player_color = player_color
         self.use_ai = True
         
-        # AI sẽ chơi màu đối diện với người chơi
+        # AI will play the opposite color
         ai_color = Player.BLACK if player_color == Player.WHITE else Player.WHITE
         
-        # Tạo đối tượng AI player
-        self.ai_player = AIPlayer(ai_color, difficulty)
+        # Create the AI player using the logic-based adapter
+        from src.logic_engine.ai_adapter import LogicAIAdapter
+        self.ai_player = LogicAIAdapter(ai_color, difficulty)
         
-        # Nếu AI là WHITE, nó sẽ đi trước
+        # If AI is White, it will go first
         if ai_color == Player.WHITE:
             self.make_ai_move()
 
     def make_ai_move(self):
-        """Yêu cầu AI tìm và thực hiện nước đi tốt nhất."""
+        """Request the AI to find and make the best move."""
         if not self.use_ai or self.ai_player is None:
             return
         
-        # Kiểm tra xem hiện tại có phải lượt của AI không
+        # Check if it's the AI's turn
         if self.game_state.current_player != self.ai_player.player_color:
             return
         
-        # Đánh dấu AI đang suy nghĩ (để hiển thị thông báo nếu cần)
+        # Mark AI as thinking (for UI feedback)
         self.ai_thinking = True
         
-        # Tạo một thread riêng để AI tính toán, không làm đơ giao diện
+        # Create a thread for AI calculation to avoid freezing the UI
         def ai_move_thread():
             try:
-                # Để AI chọn nước đi
+                # Let the AI choose a move
                 move = self.ai_player.choose_move(self.game_state)
                 
-                # Thực hiện nước đi nếu tìm được
+                # Execute the move if found
                 if move:
-                    # Kiểm tra xem nước đi có phải là phong cấp tốt không
+                    # Check if the move is a pawn promotion
+                    from src.logic.move_type import MoveType
                     if move.type == MoveType.PAWN_PROMOTION:
-                        # Gọi phương thức handle_promotion để AI chọn quân phong cấp
+                        # Let the AI choose the promotion piece
                         promotion_piece = self.ai_player.handle_promotion(
                             self.game_state, move.from_pos, move.to_pos)
                         
-                        # Cập nhật nước đi với quân phong cấp đã chọn
-                        from logic.moves.pawn_promotion import PawnPromotion
+                        # Create a promotion move with the chosen piece
+                        from src.logic.moves.pawn_promotion import PawnPromotion
                         updated_move = PawnPromotion(
                             move.from_pos,
                             move.to_pos,
@@ -412,16 +414,16 @@ class ChessBoard:
                         self.game_state.make_move(updated_move)
                     else:
                         self.game_state.make_move(move)
-                
             finally:
-                # Đánh dấu AI đã nghĩ xong
+                # Mark AI as done thinking
                 self.ai_thinking = False
                 
-                # Reset selected position và possible moves
+                # Reset selected position and possible moves
                 self.selected_pos = None
                 self.possible_moves = []
         
-        # Tạo và bắt đầu thread
+        # Create and start the AI thread
+        import threading
         ai_thread = threading.Thread(target=ai_move_thread)
-        ai_thread.daemon = True  # Để thread tự động kết thúc khi thoát game
+        ai_thread.daemon = True  # Auto-terminate thread when the game exits
         ai_thread.start()

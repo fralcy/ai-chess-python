@@ -1,3 +1,7 @@
+"""
+Main game entry point with logic-based AI integration.
+"""
+
 import pygame
 import sys
 import os
@@ -7,9 +11,10 @@ from ui.ai_menu import AIMenu
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from ui.chess_board import ChessBoard
-from ui.game_over_menu import GameOverMenu  # Import the new GameOverMenu class
+from ui.game_over_menu import GameOverMenu
 from logic.player import Player
 from logic.end_reason import EndReason
+from logic_engine.ai_adapter import LogicAIAdapter
 
 def ensure_assets_directory():
     """Ensure the assets directory exists for the chess piece images."""
@@ -26,10 +31,14 @@ def main():
     
     # Initialize pygame
     pygame.init()
+    pygame.display.set_caption("Chess Game with Logic AI")
 
-    # Set up the icon
-    icon = pygame.image.load('assets/icon/chess_icon.png')
-    pygame.display.set_icon(icon)
+    # Try to set up the icon
+    try:
+        icon = pygame.image.load('assets/icon/chess_icon.png')
+        pygame.display.set_icon(icon)
+    except:
+        print("Could not load chess icon, using default icon")
     
     # Set up the display
     SQUARE_SIZE = 80
@@ -38,7 +47,6 @@ def main():
     
     # Tạo cửa sổ với chiều cao bao gồm cả thanh trạng thái
     screen = pygame.display.set_mode((BOARD_SIZE, BOARD_SIZE + STATUS_BAR_HEIGHT))
-    pygame.display.set_caption("Chess Game")
 
     # Tạo menu AI
     ai_menu = AIMenu(screen)
@@ -71,11 +79,27 @@ def main():
                         if result:
                             # Người dùng đã chọn xong, khởi tạo bàn cờ
                             chess_board = ChessBoard(screen)
+                            
                             # Thiết lập trò chơi với AI
-                            chess_board.setup_ai_game(
-                                result["player_color"],
-                                result["difficulty"]
-                            )
+                            player_color = result["player_color"]
+                            difficulty = result["difficulty"]
+                            
+                            # Sử dụng AI dựa trên logic nếu được chỉ định
+                            if result.get("use_logic_ai", False):
+                                # Thay thế AI hiện tại bằng AI dựa trên logic
+                                chess_board.setup_ai_game(player_color, difficulty)
+                                
+                                # Gán logic AI adapter
+                                ai_color = Player.BLACK if player_color == Player.WHITE else Player.WHITE
+                                chess_board.ai_player = LogicAIAdapter(ai_color, difficulty)
+                                
+                                # Nếu AI đi trước (AI là WHITE), bắt đầu di chuyển
+                                if ai_color == Player.WHITE:
+                                    chess_board.make_ai_move()
+                            else:
+                                # Sử dụng AI thông thường
+                                chess_board.setup_ai_game(player_color, difficulty)
+                            
                             show_ai_menu = False
                     elif chess_board:
                         # Xử lý click trên bàn cờ
