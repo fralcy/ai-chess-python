@@ -2,8 +2,8 @@
 Movement rules for kings.
 """
 
-from src.logic.piece_type import PieceType
-from src.logic.player import Player
+from src.logic_engine.piece_type import PieceType
+from src.logic_engine.player import Player
 from src.logic_engine.predicates import ChessPredicates
 
 
@@ -125,8 +125,8 @@ def is_king_in_check(logic_engine, player, king_row, king_col):
         True if the king is in check, False otherwise
     """
     # This will be fully implemented in commit 5
-    # For now, we'll just use the existing board.is_in_check method
-    opponent = player.opponent()
+    # For now, we'll check if any opponent piece can capture the king
+    opponent = Player.BLACK if player == Player.WHITE else Player.WHITE
     var_piece_type = logic_engine.variable("PieceType")
     var_from_row = logic_engine.variable("FromRow")
     var_from_col = logic_engine.variable("FromCol")

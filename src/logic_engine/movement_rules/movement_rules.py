@@ -3,7 +3,7 @@ Main movement rules module for the chess logic engine.
 Defines the general movement predicates and queries.
 """
 
-from src.logic.piece_type import PieceType
+from src.logic_engine.piece_type import PieceType
 from src.logic_engine.predicates import ChessPredicates
 from src.logic_engine.movement_rules.blocking_rules import setup_blocking_rules
 from src.logic_engine.movement_rules.pawn_rules import setup_pawn_rules

@@ -2,7 +2,7 @@
 Movement rules for knights.
 """
 
-from src.logic.piece_type import PieceType
+from src.logic_engine.piece_type import PieceType
 from src.logic_engine.predicates import ChessPredicates
 
 

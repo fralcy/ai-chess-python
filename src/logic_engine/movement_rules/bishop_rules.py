@@ -2,7 +2,7 @@
 Movement rules for bishops.
 """
 
-from piece_type import PieceType
+from src.logic_engine.piece_type import PieceType
 from src.logic_engine.predicates import ChessPredicates
 
 
@@ -126,7 +126,6 @@ def setup_bishop_captures(logic_engine):
         ("subtract", (var_to_col, var_from_col, var_delta)),  # Delta = ToCol - FromCol (same delta for diagonal)
         ("greater_than", (var_delta, 0)),  # Delta > 0 (moving up and right)
         # Check if the path to the target is clear (excluding the target itself)
-        ("subtract", (var_delta, 1, var_delta)),  # Adjust delta to exclude target
         ("not", ((ChessPredicates.IS_BLOCKED, 
                   (var_from_row, var_from_col, var_to_row, var_to_col))))  # Path not blocked
     ]
@@ -143,7 +142,6 @@ def setup_bishop_captures(logic_engine):
         ("subtract", (var_from_col, var_to_col, var_delta)),  # Delta = FromCol - ToCol (same delta for diagonal)
         ("greater_than", (var_delta, 0)),  # Delta > 0 (moving up and left)
         # Check if the path to the target is clear (excluding the target itself)
-        ("subtract", (var_delta, 1, var_delta)),  # Adjust delta to exclude target
         ("not", ((ChessPredicates.IS_BLOCKED, 
                   (var_from_row, var_from_col, var_to_row, var_to_col))))  # Path not blocked
     ]
@@ -160,7 +158,6 @@ def setup_bishop_captures(logic_engine):
         ("subtract", (var_to_col, var_from_col, var_delta)),  # Delta = ToCol - FromCol (same delta for diagonal)
         ("greater_than", (var_delta, 0)),  # Delta > 0 (moving down and right)
         # Check if the path to the target is clear (excluding the target itself)
-        ("subtract", (var_delta, 1, var_delta)),  # Adjust delta to exclude target
         ("not", ((ChessPredicates.IS_BLOCKED, 
                   (var_from_row, var_from_col, var_to_row, var_to_col))))  # Path not blocked
     ]
@@ -177,7 +174,6 @@ def setup_bishop_captures(logic_engine):
         ("subtract", (var_from_col, var_to_col, var_delta)),  # Delta = FromCol - ToCol (same delta for diagonal)
         ("greater_than", (var_delta, 0)),  # Delta > 0 (moving down and left)
         # Check if the path to the target is clear (excluding the target itself)
-        ("subtract", (var_delta, 1, var_delta)),  # Adjust delta to exclude target
         ("not", ((ChessPredicates.IS_BLOCKED, 
                   (var_from_row, var_from_col, var_to_row, var_to_col))))  # Path not blocked
     ]
