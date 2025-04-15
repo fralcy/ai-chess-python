@@ -8,12 +8,11 @@ import time
 # Add parent directory to path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from logic.board import Board
+from logic_engine.logic_board import LogicBoard as Board
+from logic_engine.logic_game_state import LogicGameState as GameState
 from logic.player import Player
 from logic.piece_type import PieceType
 from logic.position import Position
-from logic.game_state import GameState
-from logic.move_type import MoveType
 from ui.promotion_menu import PromotionMenu
 from ui.pause_menu import PauseMenu
 from ui.option import Option
