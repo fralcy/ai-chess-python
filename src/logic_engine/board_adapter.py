@@ -3,11 +3,10 @@ Adapter for converting between traditional Board and LogicBoard.
 Provides methods to convert between object-oriented and logic representations.
 """
 
-from src.logic.board import Board
-from src.logic.position import Position
-from src.logic.player import Player
-from src.logic_engine.logic_board import LogicBoard
-from src.logic.pieces import Pawn, Knight, Bishop, Rook, Queen, King
+
+from position import Position
+from player import Player
+from logic_board import LogicBoard
 
 
 class BoardAdapter:
@@ -40,7 +39,7 @@ class BoardAdapter:
         Returns:
             A Board object
         """
-        board = Board()
+        board = LogicBoard()
         
         # Clear the default pieces
         board._pieces = [[None for _ in range(8)] for _ in range(8)]
@@ -103,7 +102,7 @@ class BoardAdapter:
         Returns:
             A Piece object
         """
-        from src.logic.piece_type import PieceType
+        from piece_type import PieceType
         
         if piece_type == PieceType.PAWN:
             return Pawn(player)

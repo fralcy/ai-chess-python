@@ -3,9 +3,9 @@ Logic representation of the game state.
 Combines board state with game rules and state tracking.
 """
 
-from src.logic.player import Player
-from src.logic.result import Result
-from src.logic.end_reason import EndReason
+from player import Player
+from result import Result
+from end_reason import EndReason
 from src.logic_engine.logic_board import LogicBoard
 from src.logic_engine.board_adapter import BoardAdapter
 from src.logic_engine.predicates import ChessPredicates
@@ -151,7 +151,7 @@ class LogicGameState:
         # Convert to traditional board to get the state string
         board = self.to_traditional_board()
         
-        from src.logic.state_string import StateString
+        from .state_string import StateString
         self._state_string = str(StateString(self.current_player, board))
         
         # Update position count

@@ -2,7 +2,7 @@
 Movement rules for bishops.
 """
 
-from src.logic.piece_type import PieceType
+from piece_type import PieceType
 from src.logic_engine.predicates import ChessPredicates
 
 

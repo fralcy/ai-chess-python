@@ -1,7 +1,6 @@
-from logic.pieces.piece import Piece
-from logic.piece_type import PieceType
-from logic.player import Player
-from logic.position import Position
+from piece_type import PieceType
+from player import Player
+from position import Position
 
 class StateString:
     def __init__(self, current_player, board):

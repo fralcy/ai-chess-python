@@ -3,9 +3,9 @@ Logic representation of chess board using predicates.
 This module converts the chess board state into logical facts and predicates.
 """
 
-from src.logic.position import Position
-from src.logic.player import Player
-from src.logic.piece_type import PieceType
+from src.logic_engine.position import Position
+from src.logic_engine.player import Player
+from src.logic_engine.piece_type import PieceType
 from src.logic_engine.checkmate import setup_checkmate_stalemate_rules
 from src.logic_engine.engine import LogicEngine
 from src.logic_engine.move_check import setup_move_check_rules
