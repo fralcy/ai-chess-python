@@ -3,8 +3,8 @@ Castling rules for kings.
 Defines the logic for kingside and queenside castling.
 """
 
-from src.logic.piece_type import PieceType
-from src.logic.player import Player
+from src.logic_engine.piece_type import PieceType
+from src.logic_engine.player import Player
 from src.logic_engine.predicates import ChessPredicates
 
 
@@ -42,17 +42,8 @@ def setup_kingside_castling(logic_engine):
     #     not(would_be_in_check(Player, 7, 5)),  # King doesn't pass through check
     #     not(would_be_in_check(Player, 7, 6)).  # King doesn't end in check
     
-    var_player = logic_engine.variable("Player")
-    var_king_row = logic_engine.variable("KingRow")
-    var_rook_row = logic_engine.variable("RookRow")
-    var_intermediate_col = logic_engine.variable("IntermediateCol")
-    var_target_col = logic_engine.variable("TargetCol")
     var_any_type = logic_engine.variable("AnyType")
     var_any_player = logic_engine.variable("AnyPlayer")
-    var_from_row = logic_engine.variable("FromRow")
-    var_from_col = logic_engine.variable("FromCol")
-    var_to_row = logic_engine.variable("ToRow")
-    var_to_col = logic_engine.variable("ToCol")
     
     # White kingside castling
     head = (ChessPredicates.CAN_CASTLE, 
@@ -140,18 +131,8 @@ def setup_queenside_castling(logic_engine):
     #     not(would_be_in_check(Player, 7, 3)),  # King doesn't pass through check
     #     not(would_be_in_check(Player, 7, 2)).  # King doesn't end in check
     
-    var_player = logic_engine.variable("Player")
-    var_king_row = logic_engine.variable("KingRow")
-    var_rook_row = logic_engine.variable("RookRow")
-    var_intermediate_col1 = logic_engine.variable("IntermediateCol1")
-    var_intermediate_col2 = logic_engine.variable("IntermediateCol2")
-    var_target_col = logic_engine.variable("TargetCol")
     var_any_type = logic_engine.variable("AnyType")
     var_any_player = logic_engine.variable("AnyPlayer")
-    var_from_row = logic_engine.variable("FromRow")
-    var_from_col = logic_engine.variable("FromCol")
-    var_to_row = logic_engine.variable("ToRow")
-    var_to_col = logic_engine.variable("ToCol")
     
     # White queenside castling
     head = (ChessPredicates.CAN_CASTLE, 

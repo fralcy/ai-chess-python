@@ -2,8 +2,8 @@
 Logic for determining if a square is under attack.
 """
 
-from src.logic.piece_type import PieceType
-from src.logic.player import Player
+from src.logic_engine.piece_type import PieceType
+from src.logic_engine.player import Player
 from src.logic_engine.predicates import ChessPredicates
 
 

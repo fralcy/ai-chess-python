@@ -3,8 +3,8 @@ En passant rules for pawns.
 Defines the logic for en passant captures.
 """
 
-from src.logic.piece_type import PieceType
-from src.logic.player import Player
+from src.logic_engine.piece_type import PieceType
+from src.logic_engine.player import Player
 from src.logic_engine.predicates import ChessPredicates
 
 
@@ -63,7 +63,6 @@ def setup_white_en_passant(logic_engine):
         
         # Black pawn just moved two squares
         ("add", (var_to_row, 1, var_capture_row)),
-        ("equal", (var_capture_row, 4)),  # Black pawn on row 4
         ("equal", (var_capture_col, var_to_col)),  # Same column as target
         (ChessPredicates.PIECE_AT, 
          (PieceType.PAWN, Player.BLACK, var_capture_row, var_capture_col)),
@@ -91,7 +90,6 @@ def setup_white_en_passant(logic_engine):
         
         # Black pawn just moved two squares
         ("add", (var_to_row, 1, var_capture_row)),
-        ("equal", (var_capture_row, 4)),  # Black pawn on row 4
         ("equal", (var_capture_col, var_to_col)),  # Same column as target
         (ChessPredicates.PIECE_AT, 
          (PieceType.PAWN, Player.BLACK, var_capture_row, var_capture_col)),
@@ -141,7 +139,6 @@ def setup_black_en_passant(logic_engine):
         
         # White pawn just moved two squares
         ("subtract", (var_to_row, 1, var_capture_row)),
-        ("equal", (var_capture_row, 3)),  # White pawn on row 3
         ("equal", (var_capture_col, var_to_col)),  # Same column as target
         (ChessPredicates.PIECE_AT, 
          (PieceType.PAWN, Player.WHITE, var_capture_row, var_capture_col)),
@@ -169,7 +166,6 @@ def setup_black_en_passant(logic_engine):
         
         # White pawn just moved two squares
         ("subtract", (var_to_row, 1, var_capture_row)),
-        ("equal", (var_capture_row, 3)),  # White pawn on row 3
         ("equal", (var_capture_col, var_to_col)),  # Same column as target
         (ChessPredicates.PIECE_AT, 
          (PieceType.PAWN, Player.WHITE, var_capture_row, var_capture_col)),

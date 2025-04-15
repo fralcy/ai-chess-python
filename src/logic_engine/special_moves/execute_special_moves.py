@@ -2,8 +2,8 @@
 Functions for executing special moves.
 """
 
-from src.logic.piece_type import PieceType
-from src.logic.player import Player
+from src.logic_engine.piece_type import PieceType
+from src.logic_engine.player import Player
 from src.logic_engine.predicates import ChessPredicates
 
 
@@ -50,7 +50,7 @@ def execute_en_passant(logic_engine, player, from_row, from_col, to_row, to_col)
     # Find the captured pawn's position
     capture_row = from_row
     capture_col = to_col
-    opponent = player.opponent()
+    opponent = Player.BLACK if player == Player.WHITE else Player.WHITE
     
     # Move the capturing pawn
     move_piece(logic_engine, PieceType.PAWN, player, from_row, from_col, to_row, to_col)

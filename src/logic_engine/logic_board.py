@@ -225,8 +225,22 @@ class LogicBoard:
         
         piece_type, player = piece
         
+        # Check for special moves (castling, en passant, promotion)
+        if self.execute_special_move(from_pos, to_pos):
+            # Update current player
+            current_player = self.get_current_player()
+            next_player = Player.BLACK if current_player == Player.WHITE else Player.WHITE
+            self.set_current_player(next_player)
+            return True
+        
         # Check for a capture (piece at destination)
         capture_piece = self.get_piece_at(to_pos)
+        
+        # Check if this is a pawn double move (for en passant tracking)
+        is_pawn_double_move = (
+            piece_type == PieceType.PAWN and 
+            abs(from_pos.row - to_pos.row) == 2
+        )
         
         # Remove the piece from its current position
         self.engine.retract_fact(
@@ -250,6 +264,27 @@ class LogicBoard:
                 piece_type, player, from_pos.row, from_pos.column, has_moved
             )
         
+        # If there's a capture, remove the captured piece
+        if capture_piece:
+            capture_type, capture_player = capture_piece
+            self.engine.retract_fact(
+                ChessPredicates.PIECE_AT,
+                capture_type, capture_player, to_pos.row, to_pos.column
+            )
+            
+            # Also remove has_moved fact for captured piece
+            capture_moved_results = self.engine.query(
+                ChessPredicates.HAS_MOVED,
+                capture_type, capture_player, to_pos.row, to_pos.column, var_moved
+            )
+            
+            if capture_moved_results:
+                capture_moved = capture_moved_results[0].get("Moved")
+                self.engine.retract_fact(
+                    ChessPredicates.HAS_MOVED,
+                    capture_type, capture_player, to_pos.row, to_pos.column, capture_moved
+                )
+        
         # Add piece to new position
         self.engine.assert_fact(
             ChessPredicates.PIECE_AT,
@@ -261,6 +296,39 @@ class LogicBoard:
             ChessPredicates.HAS_MOVED,
             piece_type, player, to_pos.row, to_pos.column, True
         )
+        
+        # If this is a pawn double move, add a pawn_skip fact for en passant
+        if is_pawn_double_move:
+            # Clear any existing pawn_skip facts for this player
+            var_row = self.engine.variable("Row")
+            var_col = self.engine.variable("Col")
+            skip_results = self.engine.query(
+                ChessPredicates.PAWN_SKIP, player, var_row, var_col
+            )
+            
+            for binding in skip_results:
+                skip_row = binding.get("Row")
+                skip_col = binding.get("Col")
+                self.engine.retract_fact(ChessPredicates.PAWN_SKIP, player, skip_row, skip_col)
+            
+            # Calculate the skipped square (between from and to)
+            skipped_row = (from_pos.row + to_pos.row) // 2
+            self.engine.assert_fact(
+                ChessPredicates.PAWN_SKIP,
+                player, skipped_row, to_pos.column
+            )
+        # If this is not a pawn double move, clear any pawn_skip facts for this player
+        elif piece_type == PieceType.PAWN:
+            var_row = self.engine.variable("Row")
+            var_col = self.engine.variable("Col")
+            skip_results = self.engine.query(
+                ChessPredicates.PAWN_SKIP, player, var_row, var_col
+            )
+            
+            for binding in skip_results:
+                skip_row = binding.get("Row")
+                skip_col = binding.get("Col")
+                self.engine.retract_fact(ChessPredicates.PAWN_SKIP, player, skip_row, skip_col)
         
         # Update current player
         current_player = self.get_current_player()

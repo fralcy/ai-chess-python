@@ -3,8 +3,8 @@ Promotion rules for pawns.
 Defines the logic for pawn promotion when reaching the opposite edge of the board.
 """
 
-from src.logic.piece_type import PieceType
-from src.logic.player import Player
+from src.logic_engine.piece_type import PieceType
+from src.logic_engine.player import Player
 from src.logic_engine.predicates import ChessPredicates
 
 
@@ -41,7 +41,6 @@ def setup_white_promotion(logic_engine):
     var_from_col = logic_engine.variable("FromCol")
     var_to_row = logic_engine.variable("ToRow")
     var_to_col = logic_engine.variable("ToCol")
-    var_new_type = logic_engine.variable("NewType")
     var_any_type = logic_engine.variable("AnyType")
     var_any_player = logic_engine.variable("AnyPlayer")
     
@@ -139,7 +138,6 @@ def setup_black_promotion(logic_engine):
     var_from_col = logic_engine.variable("FromCol")
     var_to_row = logic_engine.variable("ToRow")
     var_to_col = logic_engine.variable("ToCol")
-    var_new_type = logic_engine.variable("NewType")
     var_any_type = logic_engine.variable("AnyType")
     var_any_player = logic_engine.variable("AnyPlayer")
     
