@@ -20,6 +20,9 @@ class KnowledgeBase:
         Args:
             predicate: The name of the predicate (string)
             args: Arguments to the predicate
+            
+        Returns:
+            The fact that was added
         """
         fact = (predicate, args)
         self.facts.add(fact)
@@ -44,6 +47,9 @@ class KnowledgeBase:
         Args:
             head: A fact representing the head of the rule
             body: A list of facts representing the body of the rule
+            
+        Returns:
+            The rule that was added
         """
         rule = (head, body)
         self.rules.append(rule)

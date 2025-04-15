@@ -24,6 +24,9 @@ class LogicEngine:
         Args:
             predicate: The name of the predicate
             args: Arguments to the predicate
+            
+        Returns:
+            The created fact
         """
         return self.kb.assert_fact(predicate, *args)
     
@@ -37,16 +40,17 @@ class LogicEngine:
         """
         self.kb.retract_fact(predicate, *args)
     
-    def add_rule(self, head_predicate, head_args, body):
+    def add_rule(self, head, body):
         """
         Add a rule to the knowledge base.
         
         Args:
-            head_predicate: The predicate for the head
-            head_args: Arguments for the head predicate
-            body: A list of (predicate, args) tuples representing the body
+            head: A tuple (predicate, args) representing the head of the rule
+            body: A list of tuples representing the body of the rule
+            
+        Returns:
+            The created rule
         """
-        head = (head_predicate, head_args)
         return self.kb.add_rule(head, body)
     
     def register_predicate_handler(self, predicate_name, handler_function):
@@ -72,18 +76,6 @@ class LogicEngine:
         """
         goal = (predicate, args)
         return resolve(goal, self.kb, self.predicate_handlers)
-    
-    def query_all(self, goals):
-        """
-        Query multiple goals.
-        
-        Args:
-            goals: A list of (predicate, args) tuples
-            
-        Returns:
-            A list of solutions (variable bindings)
-        """
-        return resolve(goals, self.kb, self.predicate_handlers)
     
     def clear(self):
         """Clear the knowledge base."""
