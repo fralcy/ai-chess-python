@@ -5,39 +5,25 @@ Main game entry point with logic-based AI integration.
 import pygame
 import sys
 import os
+import time
 from ui.ai_menu import AIMenu
 
-# Add parent directory to path
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# Add parent directory to path to ensure imports work
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from ui.chess_board import ChessBoard
-from ui.game_over_menu import GameOverMenu
-from logic_engine.player import Player
-from logic_engine.end_reason import EndReason
-
-def ensure_assets_directory():
-    """Ensure the assets directory exists for the chess piece images."""
-    # Create assets/images directory if it doesn't exist
-    if not os.path.exists('assets/images'):
-        os.makedirs('assets/images', exist_ok=True)
-        print("Created assets/images directory for chess piece images")
-        print("Please add chess piece images to this directory before running the game")
-        print("Expected filenames: white_pawn.png, black_king.png, etc.")
+from src.ui.chess_board import ChessBoard
+from src.ui.game_over_menu import GameOverMenu
+from src.logic_engine.player import Player
+from src.logic_engine.end_reason import EndReason
+from src.utility_functions import ensure_assets_directory
 
 def main():
-    # Ensure assets directory exists
-    ensure_assets_directory()
-    
     # Initialize pygame
     pygame.init()
     pygame.display.set_caption("Chess Game with Logic AI")
 
-    # Try to set up the icon
-    try:
-        icon = pygame.image.load('assets/icon/chess_icon.png')
-        pygame.display.set_icon(icon)
-    except:
-        print("Could not load chess icon, using default icon")
+    # Ensure assets directory exists
+    ensure_assets_directory()
     
     # Set up the display
     SQUARE_SIZE = 80
@@ -57,6 +43,9 @@ def main():
     # Create game over menu (initially with no values)
     game_over_menu = None
     
+    # Define custom event for AI move
+    AI_MOVE_EVENT = pygame.USEREVENT + 1
+    
     # Main game loop
     clock = pygame.time.Clock()
     running = True
@@ -70,6 +59,11 @@ def main():
                 if event.key == pygame.K_ESCAPE:
                     if chess_board and not show_ai_menu:
                         chess_board.toggle_pause()
+            elif event.type == AI_MOVE_EVENT:
+                # Event to trigger AI move (avoids race conditions)
+                if chess_board and chess_board.use_ai and not chess_board.ai_thinking:
+                    if chess_board.game_state.current_player != chess_board.player_color:
+                        chess_board.make_ai_move()
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:  # Left mouse button
                     if show_ai_menu:
@@ -88,7 +82,8 @@ def main():
                             
                             # Nếu AI đi trước (AI là WHITE), bắt đầu di chuyển
                             if player_color == Player.BLACK:  # AI là WHITE
-                                chess_board.make_ai_move()
+                                # Use timer to avoid race condition
+                                pygame.time.set_timer(AI_MOVE_EVENT, 500)  # 500ms delay
                             
                             show_ai_menu = False
                     elif chess_board:
@@ -113,6 +108,12 @@ def main():
                                 running = False
                         elif not chess_board.is_paused:  # Chỉ xử lý click trên bàn cờ khi không tạm dừng
                             chess_board.handle_click(event.pos)
+                            
+                            # Check if it's AI's turn after player move
+                            if chess_board.use_ai and not chess_board.game_state.is_game_over():
+                                if chess_board.game_state.current_player != chess_board.player_color:
+                                    # Schedule AI move with a slight delay
+                                    pygame.time.set_timer(AI_MOVE_EVENT, 500)  # 500ms delay
 
         # Fill the screen with a background color
         screen.fill((0, 0, 0))
@@ -126,7 +127,6 @@ def main():
         
             # Check if game has ended
             if chess_board and chess_board.game_state.is_game_over() and game_over_menu is None:
-                result = chess_board.game_state.result
                 game_over_menu = GameOverMenu(screen, chess_board.game_state)
         
             # Draw game over menu if game has ended

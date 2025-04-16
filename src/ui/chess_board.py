@@ -8,19 +8,19 @@ import os
 import threading
 import time
 
-# Add parent directory to path
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# Add parent directory to path to ensure imports work
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from logic_engine.logic_game_state import LogicGameState
-from logic_engine.player import Player
-from logic_engine.piece_type import PieceType
-from logic_engine.position import Position
-from logic_engine.move import Move
-from logic_engine.move_type import MoveType
-from ui.promotion_menu import PromotionMenu
-from ui.pause_menu import PauseMenu
-from ui.option import Option
-from ui.fallback_renderer import FallbackRenderer
+from src.logic_engine.logic_game_state import LogicGameState
+from src.logic_engine.player import Player
+from src.logic_engine.piece_type import PieceType
+from src.logic_engine.position import Position
+from src.logic_engine.move import Move
+from src.logic_engine.move_type import MoveType
+from src.ui.promotion_menu import PromotionMenu
+from src.ui.pause_menu import PauseMenu
+from src.ui.option import Option
+from src.ui.fallback_renderer import FallbackRenderer
 
 class ChessBoard:
     # Colors
@@ -40,7 +40,6 @@ class ChessBoard:
     def __init__(self, screen):
         self.screen = screen
         self.game_state = LogicGameState(current_player=Player.WHITE)
-        self.load_pieces_images()
         self.selected_pos = None
         self.possible_moves = []
         self.promotion_menu = None
@@ -56,18 +55,39 @@ class ChessBoard:
             self.status_font = pygame.font.Font("freesansbold.ttf", 18)
         except:
             self.status_font = pygame.font.SysFont('Arial', 18, bold=True)
+            
+        # Tải hình ảnh quân cờ
+        self.load_pieces_images()
     
     def load_pieces_images(self):
-        """Load chess piece images."""
+        """Load chess piece images with proper fallback."""
         self.piece_images = {}
         pieces = ['pawn', 'knight', 'bishop', 'rook', 'queen', 'king']
         colors = ['white', 'black']
         
+        # Check if assets directory exists, create if not
+        if not os.path.exists('assets/images'):
+            os.makedirs('assets/images', exist_ok=True)
+            print("Created assets/images directory")
+        
+        # Print work directory and asset path for debugging
+        print(f"Current directory: {os.getcwd()}")
+        print(f"Expected assets path: {os.path.join(os.getcwd(), 'assets', 'images')}")
+        
+        # Flag to track if any images were loaded
+        any_images_loaded = False
+        
         for piece in pieces:
             for color in colors:
                 image_path = f'assets/images/{color}_{piece}.png'
+                # Print more detailed debug info
+                if os.path.exists(image_path):
+                    print(f"Found image: {image_path}")
+                else:
+                    print(f"Missing image: {image_path}")
+                    
                 try:
-                    # Load and scale the image to fit squares
+                    # Attempt to load and scale the image
                     img = pygame.image.load(image_path)
                     img = pygame.transform.scale(img, (self.SQUARE_SIZE, self.SQUARE_SIZE))
                     
@@ -75,9 +95,118 @@ class ChessBoard:
                     piece_type = getattr(PieceType, piece.upper())
                     player = Player.WHITE if color == 'white' else Player.BLACK
                     self.piece_images[(player, piece_type)] = img
-                except pygame.error as e:
-                    print(f"Cannot load image: {image_path}")
-                    print(f"Error: {e}")
+                    any_images_loaded = True
+                except (pygame.error, FileNotFoundError) as e:
+                    print(f"Error loading {image_path}: {e}")
+        
+        if not any_images_loaded:
+            print("Warning: No chess piece images were loaded successfully.")
+            print("Using fallback shape renderer for chess pieces.")
+    
+    def setup_ai_game(self, player_color, difficulty=3):
+        """
+        Setup game with AI.
+        
+        Args:
+            player_color: The color of the human player
+            difficulty: The difficulty level of the AI (1-5)
+        """
+        print(f"Setting up AI game. Player: {player_color}, Difficulty: {difficulty}")
+        self.player_color = player_color
+        self.use_ai = True
+        self.ai_difficulty = difficulty
+        
+        # Reset the game state
+        self.game_state = LogicGameState(current_player=Player.WHITE)
+        self.selected_pos = None
+        self.possible_moves = []
+        
+        # Debug print
+        print(f"AI mode enabled. Player is {player_color}, AI is {Player.BLACK if player_color == Player.WHITE else Player.WHITE}")
+    
+    def make_ai_move(self):
+        """Request the AI to find and make the best move."""
+        if not self.use_ai:
+            print("AI mode is not enabled")
+            return
+        
+        # Check if it's the AI's turn
+        if self.game_state.is_game_over():
+            print("Game is over, AI will not move")
+            return
+            
+        if self.game_state.current_player == self.player_color:
+            print(f"Not AI's turn. Current player: {self.game_state.current_player}, Player color: {self.player_color}")
+            return
+        
+        # Debug print
+        print(f"AI making move as {self.game_state.current_player}")
+        
+        # Mark AI as thinking (for UI feedback)
+        self.ai_thinking = True
+        
+        # Create a thread for AI calculation to avoid freezing the UI
+        def ai_move_thread():
+            try:
+                # Đảm bảo import đúng đường dẫn
+                try:
+                    # Thử import theo cách tiêu chuẩn
+                    from src.logic_engine.ai.minimax import minimax_logic
+                except ImportError:
+                    # Thử import theo cách khác
+                    from logic_engine.ai.minimax import minimax_logic
+                
+                import sys
+                
+                print("AI is thinking...")
+                
+                # Sử dụng Minimax trực tiếp với độ sâu dựa trên mức độ khó
+                depth = self.ai_difficulty
+                ai_color = self.game_state.current_player
+                
+                # Tìm nước đi tốt nhất sử dụng minimax
+                print(f"Calculating move with depth {depth}")
+                _, best_move = minimax_logic(
+                    self.game_state,
+                    depth,
+                    -sys.maxsize,
+                    sys.maxsize,
+                    ai_color
+                )
+                
+                print(f"AI chose move: {best_move}")
+                
+                # Nếu tìm được nước đi
+                if best_move:
+                    # Check if the move is a pawn promotion
+                    if best_move.type == MoveType.PAWN_PROMOTION:
+                        # AI always chooses Queen for promotion
+                        best_move = Move(
+                            best_move.from_pos,
+                            best_move.to_pos,
+                            MoveType.PAWN_PROMOTION,
+                            PieceType.QUEEN
+                        )
+                    
+                    # Execute the move
+                    move_result = self.game_state.make_move(best_move)
+                    print(f"Move executed: {move_result}")
+                else:
+                    print("AI could not find a valid move")
+            except Exception as e:
+                print(f"Error in AI move calculation: {e}")
+            finally:
+                # Mark AI as done thinking
+                self.ai_thinking = False
+                
+                # Reset selected position and possible moves
+                self.selected_pos = None
+                self.possible_moves = []
+        
+        # Create and start the AI thread
+        ai_thread = threading.Thread(target=ai_move_thread)
+        ai_thread.daemon = True  # Auto-terminate thread when the game exits
+        ai_thread.start()
     
     def draw_board(self):
         """Draw the chess board with alternating colors."""
@@ -118,7 +247,7 @@ class ChessBoard:
         board_start_y = self.STATUS_BAR_HEIGHT
         
         # Lấy tất cả quân cờ từ game state
-        for piece_type, player, position, _ in self.game_state.logic_board.get_all_pieces():
+        for piece_type, player, position, _ in self.game_state.get_all_pieces():
             image_key = (player, piece_type)
             if image_key in self.piece_images:
                 self.screen.blit(
@@ -199,6 +328,10 @@ class ChessBoard:
                     status_text = "Your turn"
                 else:
                     status_text = "AI's turn"
+                    # Auto-trigger AI move if not already thinking
+                    if not self.ai_thinking:
+                        # Use delayed call to avoid race condition
+                        pygame.time.set_timer(pygame.USEREVENT, 100)  # 100ms delay
             else:
                 status_text = f"{current_player}'s turn"
         
@@ -209,8 +342,17 @@ class ChessBoard:
     
     def handle_click(self, pos):
         """Handle mouse click on the board."""
-        # Nếu đang sử dụng AI và không phải lượt của người chơi thì bỏ qua click
+        # If game is over, ignore clicks
+        if self.game_state.is_game_over():
+            return
+            
+        # If AI is thinking, ignore clicks
+        if self.ai_thinking:
+            return
+            
+        # If it's AI's turn, ignore clicks on the board
         if self.use_ai and self.game_state.current_player != self.player_color:
+            print("It's AI's turn, ignoring click")
             return
         
         if self.promotion_menu:  # Handle promotion menu clicks
@@ -240,13 +382,12 @@ class ChessBoard:
                     self.possible_moves = []
                     self.promotion_menu = None  # Close the promotion menu
                     
-                    # Gọi AI đi nếu cần
-                    if self.use_ai and not self.game_state.is_game_over() and self.game_state.current_player != self.player_color:
+                    # Trigger AI move if needed
+                    if self.use_ai and not self.game_state.is_game_over():
                         self.make_ai_move()
-                return
+            return
 
-        # Điều chỉnh vị trí click để tính toán đúng ô trên bàn cờ
-        # (trừ đi chiều cao thanh trạng thái)
+        # Adjust click position to account for status bar
         adjusted_pos = (pos[0], pos[1] - self.STATUS_BAR_HEIGHT)
         col = adjusted_pos[0] // self.SQUARE_SIZE
         row = adjusted_pos[1] // self.SQUARE_SIZE
@@ -278,13 +419,13 @@ class ChessBoard:
                         break
 
                 if move_executed:
-                    # Gọi AI đi nếu cần
-                    if self.use_ai and not self.game_state.is_game_over() and self.game_state.current_player != self.player_color:
-                        self.make_ai_move()
-                    
                     # Reset selection
                     self.selected_pos = None
                     self.possible_moves = []
+                    
+                    # Trigger AI move if needed
+                    if self.use_ai and not self.game_state.is_game_over():
+                        self.make_ai_move()
                     return
 
                 # If clicked on the same piece, deselect it
@@ -308,29 +449,6 @@ class ChessBoard:
                 self.selected_pos = clicked_pos
                 self.possible_moves = list(self.game_state.legal_moves_for_piece(clicked_pos))
     
-    def draw(self):
-        """Draw the complete chess board with pieces and highlights."""
-        # Vẽ thanh trạng thái trước
-        self.draw_status_bar()
-        
-        # Sau đó vẽ bàn cờ và các phần tử khác
-        self.draw_board()
-        self.draw_highlights()
-        self.draw_pieces()
-        
-        if self.promotion_menu:  # Draw promotion menu if active
-            self.promotion_menu.draw()
-        
-        if self.is_paused and self.pause_menu:  # Draw pause menu if active
-            self.pause_menu.draw()
-    
-    def toggle_pause(self):
-        """Toggle the pause state of the game."""
-        self.is_paused = not self.is_paused
-        
-        if self.is_paused and not self.pause_menu:
-            self.pause_menu = PauseMenu(self.screen)
-
     def handle_pause_menu_event(self, event):
         """Handle events from the pause menu."""
         if not self.is_paused or not self.pause_menu:
@@ -360,69 +478,26 @@ class ChessBoard:
             return "AI_MENU"
         
         return False
+        
+    def toggle_pause(self):
+        """Toggle the pause state of the game."""
+        self.is_paused = not self.is_paused
+        
+        if self.is_paused and not self.pause_menu:
+            self.pause_menu = PauseMenu(self.screen)
     
-    def setup_ai_game(self, player_color, difficulty=3):
-        """
-        Setup game with AI.
+    def draw(self):
+        """Draw the complete chess board with pieces and highlights."""
+        # Vẽ thanh trạng thái trước
+        self.draw_status_bar()
         
-        Args:
-            player_color: The color of the human player
-            difficulty: The difficulty level of the AI (1-5)
-        """
-        self.player_color = player_color
-        self.use_ai = True
-        self.ai_difficulty = difficulty
-    
-    def make_ai_move(self):
-        """Request the AI to find and make the best move."""
-        if not self.use_ai:
-            return
+        # Sau đó vẽ bàn cờ và các phần tử khác
+        self.draw_board()
+        self.draw_highlights()
+        self.draw_pieces()
         
-        # Check if it's the AI's turn
-        if self.game_state.current_player == self.player_color:
-            return
+        if self.promotion_menu:  # Draw promotion menu if active
+            self.promotion_menu.draw()
         
-        # Mark AI as thinking (for UI feedback)
-        self.ai_thinking = True
-        
-        # Create a thread for AI calculation to avoid freezing the UI
-        def ai_move_thread():
-            try:
-                # Import logic AI
-                from logic_engine.ai.minimax import minimax_logic
-                import sys
-                
-                # Sử dụng Minimax trực tiếp với độ sâu dựa trên mức độ khó
-                depth = self.ai_difficulty
-                ai_color = self.game_state.current_player
-                
-                # Tìm nước đi tốt nhất sử dụng minimax
-                _, best_move = minimax_logic(
-                    self.game_state,
-                    depth,
-                    -sys.maxsize,
-                    sys.maxsize,
-                    ai_color
-                )
-                
-                # Nếu tìm được nước đi
-                if best_move:
-                    # Check if the move is a pawn promotion
-                    if best_move.type == MoveType.PAWN_PROMOTION:
-                        # AI always chooses Queen for promotion
-                        best_move.promotion_type = PieceType.QUEEN
-                    
-                    # Execute the move
-                    self.game_state.make_move(best_move)
-            finally:
-                # Mark AI as done thinking
-                self.ai_thinking = False
-                
-                # Reset selected position and possible moves
-                self.selected_pos = None
-                self.possible_moves = []
-        
-        # Create and start the AI thread
-        ai_thread = threading.Thread(target=ai_move_thread)
-        ai_thread.daemon = True  # Auto-terminate thread when the game exits
-        ai_thread.start()
+        if self.is_paused and self.pause_menu:  # Draw pause menu if active
+            self.pause_menu.draw()
