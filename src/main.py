@@ -12,9 +12,8 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from ui.chess_board import ChessBoard
 from ui.game_over_menu import GameOverMenu
-from logic.player import Player
-from logic.end_reason import EndReason
-from logic_engine.ai_adapter import LogicAIAdapter
+from logic_engine.player import Player
+from logic_engine.end_reason import EndReason
 
 def ensure_assets_directory():
     """Ensure the assets directory exists for the chess piece images."""
@@ -53,7 +52,7 @@ def main():
     show_ai_menu = True  # Hiển thị menu AI khi bắt đầu
 
     # Create chess board
-    chess_board = ChessBoard(screen)
+    chess_board = None
     
     # Create game over menu (initially with no values)
     game_over_menu = None
@@ -84,21 +83,12 @@ def main():
                             player_color = result["player_color"]
                             difficulty = result["difficulty"]
                             
-                            # Sử dụng AI dựa trên logic nếu được chỉ định
-                            if result.get("use_logic_ai", False):
-                                # Thay thế AI hiện tại bằng AI dựa trên logic
-                                chess_board.setup_ai_game(player_color, difficulty)
-                                
-                                # Gán logic AI adapter
-                                ai_color = Player.BLACK if player_color == Player.WHITE else Player.WHITE
-                                chess_board.ai_player = LogicAIAdapter(ai_color, difficulty)
-                                
-                                # Nếu AI đi trước (AI là WHITE), bắt đầu di chuyển
-                                if ai_color == Player.WHITE:
-                                    chess_board.make_ai_move()
-                            else:
-                                # Sử dụng AI thông thường
-                                chess_board.setup_ai_game(player_color, difficulty)
+                            # Thiết lập game với AI
+                            chess_board.setup_ai_game(player_color, difficulty)
+                            
+                            # Nếu AI đi trước (AI là WHITE), bắt đầu di chuyển
+                            if player_color == Player.BLACK:  # AI là WHITE
+                                chess_board.make_ai_move()
                             
                             show_ai_menu = False
                     elif chess_board:

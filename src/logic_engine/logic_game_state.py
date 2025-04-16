@@ -22,7 +22,7 @@ class LogicGameState:
         Initialize the game state.
         
         Args:
-            board: A Board object or None to create a new board
+            board: Không còn được sử dụng, giữ lại để tương thích
             current_player: The player who goes first
             engine: An existing LogicEngine instance, or None to create a new one
         """
@@ -32,16 +32,12 @@ class LogicGameState:
         self._state_history = {}
         self._position_counts = {}
         
-        if board:
-            # Sync from an existing board
-            self.logic_board.sync_from_board(board)
-        else:
-            # Create a new board with initial position
-            self.logic_board.setup_initial_board()
+        # Luôn khởi tạo bàn cờ mới
+        self.logic_board.setup_initial_board()
         
         # Set current player
         self.logic_board.set_current_player(current_player)
-    
+        
     @property
     def current_player(self):
         """Get the current player."""

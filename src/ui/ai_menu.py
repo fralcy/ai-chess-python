@@ -229,7 +229,7 @@ class AIMenu:
             
             # Check start button
             if self.start_button.collidepoint(event.pos):
-                from logic.player import Player
+                from src.logic_engine.player import Player
                 
                 player_color = Player.WHITE if self.player_color == "white" else Player.BLACK
                 return {

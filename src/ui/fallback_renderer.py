@@ -5,8 +5,8 @@ import sys
 # Add parent directory to path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from logic.piece_type import PieceType
-from logic.player import Player
+from src.logic_engine.piece_type import PieceType
+from src.logic_engine.player import Player
 
 class FallbackRenderer:
     """Class that can render chess pieces when images are unavailable."""

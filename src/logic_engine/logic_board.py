@@ -336,3 +336,43 @@ class LogicBoard:
         self.set_current_player(next_player)
         
         return True
+    
+    def get_all_pieces(self):
+        """
+        Get all pieces on the board.
+        
+        Returns:
+            A list of tuples (piece_type, player, position, has_moved)
+        """
+        var_type = self.engine.variable("Type")
+        var_player = self.engine.variable("Player")
+        var_row = self.engine.variable("Row")
+        var_col = self.engine.variable("Col")
+        
+        pieces = []
+        results = self.engine.query(
+            ChessPredicates.PIECE_AT,
+            var_type, var_player, var_row, var_col
+        )
+        
+        for binding in results:
+            piece_type = binding.get("Type")
+            player = binding.get("Player")
+            row = binding.get("Row")
+            col = binding.get("Col")
+            position = Position(row, col)
+            
+            # Get has_moved status
+            var_moved = self.engine.variable("Moved")
+            moved_results = self.engine.query(
+                ChessPredicates.HAS_MOVED,
+                piece_type, player, row, col, var_moved
+            )
+            
+            has_moved = False
+            if moved_results:
+                has_moved = moved_results[0].get("Moved")
+            
+            pieces.append((piece_type, player, position, has_moved))
+        
+        return pieces

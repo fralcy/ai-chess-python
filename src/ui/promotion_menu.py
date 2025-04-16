@@ -5,8 +5,8 @@ import os
 # Add parent directory to path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from logic.piece_type import PieceType
-from logic.player import Player
+from src.logic_engine.piece_type import PieceType
+from src.logic_engine.player import Player
 from ui.fallback_renderer import FallbackRenderer
 
 class PromotionMenu:
@@ -117,7 +117,6 @@ class PromotionMenu:
                 self.screen.blit(self.piece_images[piece_type], piece_rect)
             else:
                 # Create a temporary piece object for the fallback renderer
-                from logic.pieces.piece import Piece
                 class TempPiece:
                     def __init__(self, piece_type, color):
                         self.piece_type = piece_type

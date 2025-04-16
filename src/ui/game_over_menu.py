@@ -1,7 +1,7 @@
 import pygame
 import sys
 import os
-from src.logic.game_state import GameState
+from src.logic_engine.logic_game_state import LogicGameState as GameState
 # Add parent directory to path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -87,7 +87,7 @@ class GameOverMenu:
         
         # Draw winner text (larger and centered)
         if self.winner is not None:
-            from logic.player import Player
+            from src.logic_engine.player import Player
             winner_text = ""
             if self.winner == Player.WHITE:
                 winner_text = "White wins!"
@@ -102,7 +102,7 @@ class GameOverMenu:
         
         # Draw reason text
         if self.reason is not None:
-            from logic.end_reason import EndReason
+            from src.logic_engine.end_reason import EndReason
             reason_text = ""
             if self.reason == EndReason.CHECKMATE:
                 reason_text = "Checkmate"
@@ -169,7 +169,7 @@ class GameOverMenu:
         return False
     
     def get_winner_text(self):
-        from src.logic.player import Player
+        from src.logic_engine.player import Player
         if self.winner == Player.WHITE:
             return "White wins!"
         elif self.winner == Player.BLACK:
@@ -178,7 +178,7 @@ class GameOverMenu:
             return "It's a draw!"
         
     def player_string(self, player):
-        from src.logic.player import Player
+        from src.logic_engine.player import Player
         if player == Player.WHITE:
             return "White"
         elif player == Player.BLACK:
@@ -187,8 +187,8 @@ class GameOverMenu:
             return "Unknown"
         
     def get_reason_text(self, end_reason, current_player):
-        from src.logic.end_reason import EndReason
-        from src.logic.player import Player
+        from src.logic_engine.end_reason import EndReason
+        from src.logic_engine.player import Player
         match end_reason:
             case EndReason.Stalemate:
                 return f"STALEMATE = {self.player_string(current_player)} CAN'T MOVE"
