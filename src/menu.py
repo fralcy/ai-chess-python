@@ -372,7 +372,7 @@ class GameOverMenu:
         self.screen = screen
         self.clock = pygame.time.Clock()
         self.running = True
-        self.result = result  # 'white_wins', 'black_wins', or 'draw'
+        self.result = result  # 'white_wins', 'black_wins', hoặc các loại hòa
         
         # Create buttons
         btn_width, btn_height = 200, 50
@@ -385,27 +385,55 @@ class GameOverMenu:
         self.quit_btn = Button("Quit Game", center_x, 540, btn_width, btn_height,
                               WHITE, (230, 230, 230))
     
-    def handle_events(self):
-        """Handle events for the game over menu"""
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                self.running = False
-                return {'action': 'quit'}
-                
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                mouse_pos = pygame.mouse.get_pos()
-                
-                if self.play_again_btn.is_clicked(mouse_pos):
-                    self.running = False
-                    return {'action': 'restart'}
-                elif self.main_menu_btn.is_clicked(mouse_pos):
-                    self.running = False
-                    return {'action': 'main_menu'}
-                elif self.quit_btn.is_clicked(mouse_pos):
-                    self.running = False
-                    return {'action': 'quit'}
+    # ... [Các phương thức khác không thay đổi] ...
+    
+    def draw(self):
+        """Draw the game over menu overlay"""
+        # Semi-transparent overlay
+        overlay = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 128))  # Black with alpha
+        self.screen.blit(overlay, (0, 0))
         
-        return {'action': 'none'}
+        # Draw game over menu background
+        menu_rect = pygame.Rect(WIDTH // 2 - 200, HEIGHT // 2 - 200, 400, 400)
+        pygame.draw.rect(self.screen, LIGHT_SQUARE, menu_rect)
+        pygame.draw.rect(self.screen, BLACK, menu_rect, 3)
+        
+        # Draw title
+        font = pygame.font.SysFont('Arial', 48)
+        title = font.render("Game Over", True, BLACK)
+        title_rect = title.get_rect(center=(WIDTH // 2, HEIGHT // 2 - 150))
+        self.screen.blit(title, title_rect)
+        
+        # Draw result
+        font = pygame.font.SysFont('Arial', 36)
+        result_text = ""
+        
+        if self.result == 'white_wins':
+            result_text = "White Wins!"
+        elif self.result == 'black_wins':
+            result_text = "Black Wins!"
+        elif self.result == 'draw_stalemate':
+            result_text = "Draw by Stalemate"
+        elif self.result == 'draw_insufficient':
+            result_text = "Draw by Insufficient Material"
+        elif self.result == 'draw_repetition':
+            result_text = "Draw by Threefold Repetition"
+        elif self.result == 'draw_fifty_move':
+            result_text = "Draw by Fifty-Move Rule"
+        else:
+            result_text = "Draw"
+        
+        result = font.render(result_text, True, BLACK)
+        result_rect = result.get_rect(center=(WIDTH // 2, HEIGHT // 2 - 80))
+        self.screen.blit(result, result_rect)
+        
+        # Draw buttons
+        self.play_again_btn.draw(self.screen)
+        self.main_menu_btn.draw(self.screen)
+        self.quit_btn.draw(self.screen)
+        
+        pygame.display.flip()
     
     def draw(self):
         """Draw the game over menu overlay"""

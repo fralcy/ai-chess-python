@@ -153,6 +153,9 @@ class Game:
         board = self.game_state['board']
         current_color = self.game_state['turn']
         
+        # Import các hàm kiểm tra hòa cờ
+        from src.endgame import is_insufficient_material, is_threefold_repetition, is_fifty_move_rule
+        
         # Check for checkmate
         if is_checkmate(board, self.game_state, current_color):
             winner = 'black' if current_color == 'white' else 'white'
@@ -163,11 +166,29 @@ class Game:
         # Check for stalemate
         if is_stalemate(board, self.game_state, current_color):
             self.game_over = True
-            self.show_game_over_menu('draw')
+            self.show_game_over_menu('draw_stalemate')
+            return True
+        
+        # Check for insufficient material
+        if is_insufficient_material(board):
+            self.game_over = True
+            self.show_game_over_menu('draw_insufficient')
+            return True
+        
+        # Check for threefold repetition
+        if is_threefold_repetition(self.game_state):
+            self.game_over = True
+            self.show_game_over_menu('draw_repetition')
+            return True
+        
+        # Check for fifty move rule
+        if is_fifty_move_rule(self.game_state):
+            self.game_over = True
+            self.show_game_over_menu('draw_fifty_move')
             return True
             
         return False
-        
+            
     def make_ai_move(self):
         """Let the AI make a move"""
         if self.ai_thinking and self.game_state and self.game_state['turn'] != self.player_color:
