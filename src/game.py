@@ -3,8 +3,8 @@ Game management using logical programming approach
 """
 
 import pygame
-from src.constants import FPS, WIDTH, HEIGHT, BLACK
-from src.board import create_game_state, draw_board
+from src.constants import FPS, WIDTH, HEIGHT, BLACK, SQUARE_SIZE
+from src.board import create_game_state, draw_board, select_piece, move_piece
 
 class Game:
     """Main game class to manage the chess game"""
@@ -15,6 +15,27 @@ class Game:
         self.clock = pygame.time.Clock()
         self.running = True
         self.game_state = create_game_state()
+        
+    def handle_mouse_click(self, pos):
+        """Handle mouse click event"""
+        col = pos[0] // SQUARE_SIZE
+        row = pos[1] // SQUARE_SIZE
+        click_pos = (row, col)
+        
+        selected = self.game_state['selected_piece']
+        valid_moves = self.game_state['valid_moves']
+        
+        if selected:
+            # If a piece is already selected, try to move it
+            if click_pos in valid_moves:
+                self.game_state = move_piece(self.game_state, selected, click_pos)
+            else:
+                # If clicked on another piece of same color, select it
+                # Otherwise, deselect current piece
+                self.game_state = select_piece(self.game_state, click_pos)
+        else:
+            # No piece selected, try to select one
+            self.game_state = select_piece(self.game_state, click_pos)
         
     def run(self):
         """Main game loop"""
@@ -27,8 +48,8 @@ class Game:
                 if event.type == pygame.QUIT:
                     self.running = False
                 elif event.type == pygame.MOUSEBUTTONDOWN:
-                    # Sẽ được bổ sung trong commit tiếp theo
-                    pass
+                    mouse_pos = pygame.mouse.get_pos()
+                    self.handle_mouse_click(mouse_pos)
             
             # Draw background
             self.screen.fill(BLACK)

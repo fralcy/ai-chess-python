@@ -3,10 +3,10 @@ Chess board representation using logical programming approach
 """
 
 import pygame
-from src.constants import BOARD_SIZE, SQUARE_SIZE, LIGHT_SQUARE, DARK_SQUARE
+from src.constants import BOARD_SIZE, SQUARE_SIZE, LIGHT_SQUARE, DARK_SQUARE, HIGHLIGHT, MOVE_HIGHLIGHT
+from src.pieces import get_valid_moves
 
 # Biểu diễn bàn cờ như một tập hợp các facts
-# Bàn cờ sẽ được biểu diễn dưới dạng dictionary thay vì lớp đối tượng
 def create_board():
     """Create an initial chess board state as a set of facts"""
     # Format: board[position] = (piece_type, color)
@@ -60,32 +60,68 @@ def create_game_state():
         },
         'en_passant_target': None,
         'move_history': [],
-        'selected_piece': None
+        'selected_piece': None,
+        'valid_moves': []
     }
     return state
 
-# Logical rules
-def is_valid_position(pos):
-    """Check if position is within board boundaries"""
-    row, col = pos
-    return 0 <= row < BOARD_SIZE and 0 <= col < BOARD_SIZE
+def select_piece(game_state, pos):
+    """Select a piece at the given position"""
+    board = game_state['board']
+    piece = board.get(pos, None)
+    
+    # Clear previous selection
+    game_state['selected_piece'] = None
+    game_state['valid_moves'] = []
+    
+    # Check if selected position has a piece of the current player's color
+    if piece and piece[1] == game_state['turn']:
+        game_state['selected_piece'] = pos
+        game_state['valid_moves'] = get_valid_moves(board, pos)
+    
+    return game_state
 
-def get_piece_at(board, pos):
-    """Get piece at the given position"""
-    if pos in board:
-        return board[pos]
-    return None
-
-def is_opponent(piece1, piece2):
-    """Check if pieces are opponents"""
-    if piece1 is None or piece2 is None:
-        return False
-    return piece1[1] != piece2[1]
+def move_piece(game_state, start_pos, end_pos):
+    """Move a piece from start position to end position"""
+    board = game_state['board']
+    piece = board.get(start_pos, None)
+    
+    if not piece:
+        return game_state
+    
+    # Check if the move is valid
+    valid_moves = get_valid_moves(board, start_pos)
+    if end_pos not in valid_moves:
+        return game_state
+    
+    # Perform the move
+    board[end_pos] = piece
+    del board[start_pos]
+    
+    # Track king positions
+    if piece[0] == 'K':
+        if piece[1] == 'white':
+            game_state['white_king_pos'] = end_pos
+        else:
+            game_state['black_king_pos'] = end_pos
+    
+    # Log the move
+    game_state['move_history'].append((start_pos, end_pos, piece))
+    
+    # Switch turns
+    game_state['turn'] = 'black' if game_state['turn'] == 'white' else 'white'
+    
+    # Clear selection
+    game_state['selected_piece'] = None
+    game_state['valid_moves'] = []
+    
+    return game_state
 
 def draw_board(screen, game_state):
     """Draw the chess board and pieces"""
     board = game_state['board']
     selected = game_state['selected_piece']
+    valid_moves = game_state['valid_moves']
     
     # Draw the board squares
     for row in range(BOARD_SIZE):
@@ -104,18 +140,46 @@ def draw_board(screen, game_state):
                     SQUARE_SIZE
                 )
             )
-            
-            # Highlight selected piece
-            if selected and selected == (row, col):
-                pygame.draw.rect(
-                    screen,
-                    (255, 255, 0, 128),  # Yellow with alpha
-                    pygame.Rect(
-                        col * SQUARE_SIZE,
-                        row * SQUARE_SIZE,
-                        SQUARE_SIZE,
-                        SQUARE_SIZE
-                    )
-                )
     
-    # Draw pieces (sẽ được bổ sung trong commit tiếp theo)
+    # Highlight valid moves
+    for move in valid_moves:
+        row, col = move
+        pygame.draw.rect(
+            screen,
+            MOVE_HIGHLIGHT,
+            pygame.Rect(
+                col * SQUARE_SIZE,
+                row * SQUARE_SIZE,
+                SQUARE_SIZE,
+                SQUARE_SIZE
+            )
+        )
+    
+    # Highlight selected piece
+    if selected:
+        row, col = selected
+        pygame.draw.rect(
+            screen,
+            HIGHLIGHT,
+            pygame.Rect(
+                col * SQUARE_SIZE,
+                row * SQUARE_SIZE,
+                SQUARE_SIZE,
+                SQUARE_SIZE
+            )
+        )
+    
+    # Draw pieces placeholder
+    for pos, piece in board.items():
+        row, col = pos
+        piece_type, color = piece
+        
+        # Simple representation of pieces
+        font = pygame.font.SysFont('Arial', 36)
+        text_color = (255, 255, 255) if color == 'black' else (0, 0, 0)
+        text = font.render(piece_type, True, text_color)
+        
+        # Center the text in the square
+        text_rect = text.get_rect(center=(col * SQUARE_SIZE + SQUARE_SIZE // 2, 
+                                          row * SQUARE_SIZE + SQUARE_SIZE // 2))
+        screen.blit(text, text_rect)
