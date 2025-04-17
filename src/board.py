@@ -3,8 +3,9 @@ Chess board representation using logical programming approach
 """
 
 import pygame
-from src.constants import BOARD_SIZE, SQUARE_SIZE, LIGHT_SQUARE, DARK_SQUARE, HIGHLIGHT, MOVE_HIGHLIGHT
-from src.pieces import get_valid_moves
+from src.constants import BOARD_SIZE, SQUARE_SIZE, LIGHT_SQUARE, DARK_SQUARE, HIGHLIGHT, MOVE_HIGHLIGHT, WIDTH
+from src.pieces import is_empty, is_check, is_checkmate, is_stalemate, get_valid_moves_considering_check
+
 
 # Biểu diễn bàn cờ như một tập hợp các facts
 def create_board():
@@ -77,7 +78,7 @@ def select_piece(game_state, pos):
     # Check if selected position has a piece of the current player's color
     if piece and piece[1] == game_state['turn']:
         game_state['selected_piece'] = pos
-        game_state['valid_moves'] = get_valid_moves(board, game_state, pos)
+        game_state['valid_moves'] = get_valid_moves_considering_check(board, game_state, pos)
     
     return game_state
 
@@ -90,7 +91,7 @@ def move_piece(game_state, start_pos, end_pos):
         return game_state
     
     # Check if the move is valid
-    valid_moves = get_valid_moves(board, game_state, start_pos)
+    valid_moves = get_valid_moves_considering_check(board, game_state, start_pos)
     if end_pos not in valid_moves:
         return game_state
     
@@ -274,3 +275,18 @@ def draw_board(screen, game_state):
         text_rect = text.get_rect(center=(col * SQUARE_SIZE + SQUARE_SIZE // 2, 
                                           row * SQUARE_SIZE + SQUARE_SIZE // 2))
         screen.blit(text, text_rect)
+    
+    # Check for check, checkmate, or stalemate
+    current_color = game_state['turn']
+    font = pygame.font.SysFont('Arial', 24)
+    
+    if is_checkmate(board, game_state, current_color):
+        winner = 'Black' if current_color == 'white' else 'White'
+        text = font.render(f"{winner} wins by checkmate!", True, (255, 0, 0))
+        screen.blit(text, (WIDTH // 2 - 100, 20))
+    elif is_stalemate(board, game_state, current_color):
+        text = font.render("Game drawn by stalemate!", True, (255, 0, 0))
+        screen.blit(text, (WIDTH // 2 - 100, 20))
+    elif is_check(board, game_state, current_color):
+        text = font.render(f"{current_color.capitalize()} is in check!", True, (255, 0, 0))
+        screen.blit(text, (WIDTH // 2 - 100, 20))

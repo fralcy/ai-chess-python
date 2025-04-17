@@ -263,3 +263,146 @@ def get_valid_moves(board, game_state, pos):
         return get_king_moves(board, game_state, pos)
     
     return []
+
+def is_square_under_attack(board, game_state, square, attacking_color):
+    """Check if a square is under attack by a piece of the given color"""
+    for pos, piece in board.items():
+        piece_type, color = piece
+        if color == attacking_color:
+            # Get valid moves for this piece
+            moves = []
+            if piece_type == 'P':
+                # Special case for pawns - they can attack diagonally
+                row, col = pos
+                direction = -1 if color == 'white' else 1
+                attacks = [(row + direction, col - 1), (row + direction, col + 1)]
+                moves = [attack for attack in attacks if is_valid_position(attack)]
+            else:
+                # For other pieces, use the normal move generation
+                # But pass a simplified game state (to avoid recursion)
+                simple_state = {'castling_rights': game_state['castling_rights'],
+                               'en_passant_target': game_state['en_passant_target']}
+                if piece_type == 'K':
+                    moves = get_king_moves(board, simple_state, pos)
+                elif piece_type == 'Q':
+                    moves = get_queen_moves(board, pos)
+                elif piece_type == 'R':
+                    moves = get_rook_moves(board, pos)
+                elif piece_type == 'B':
+                    moves = get_bishop_moves(board, pos)
+                elif piece_type == 'N':
+                    moves = get_knight_moves(board, pos)
+            
+            # Check if the square is in the valid moves
+            if square in moves:
+                return True
+    
+    return False
+
+def is_check(board, game_state, color):
+    """Check if the king of the given color is in check"""
+    # Get king position
+    king_pos = game_state['white_king_pos'] if color == 'white' else game_state['black_king_pos']
+    
+    # Check if the king is under attack
+    opponent_color = 'black' if color == 'white' else 'white'
+    return is_square_under_attack(board, game_state, king_pos, opponent_color)
+
+def is_checkmate(board, game_state, color):
+    """Check if the king of the given color is in checkmate"""
+    # First, check if the king is in check
+    if not is_check(board, game_state, color):
+        return False
+    
+    # Check if any move can get the king out of check
+    for pos, piece in board.items():
+        piece_type, piece_color = piece
+        if piece_color == color:
+            valid_moves = get_valid_moves(board, game_state, pos)
+            for move in valid_moves:
+                # Make a hypothetical move
+                new_state = make_hypothetical_move(game_state, pos, move)
+                # Check if this move gets out of check
+                if not is_check(new_state['board'], new_state, color):
+                    return False
+    
+    # If no move can get the king out of check, it's checkmate
+    return True
+
+def is_stalemate(board, game_state, color):
+    """Check if the position is a stalemate for the given color"""
+    # First, check if the king is NOT in check
+    if is_check(board, game_state, color):
+        return False
+    
+    # Check if any valid move exists
+    for pos, piece in board.items():
+        piece_type, piece_color = piece
+        if piece_color == color:
+            valid_moves = get_valid_moves(board, game_state, pos)
+            for move in valid_moves:
+                # Make a hypothetical move
+                new_state = make_hypothetical_move(game_state, pos, move)
+                # Check if this move doesn't put the king in check
+                if not is_check(new_state['board'], new_state, color):
+                    return False
+    
+    # If no legal move exists, it's stalemate
+    return True
+
+def make_hypothetical_move(game_state, start_pos, end_pos):
+    """Make a hypothetical move and return the new game state"""
+    # Create a copy of the game state
+    new_state = {
+        'board': dict(game_state['board']),
+        'turn': game_state['turn'],
+        'white_king_pos': game_state['white_king_pos'],
+        'black_king_pos': game_state['black_king_pos'],
+        'castling_rights': dict(game_state['castling_rights']),
+        'en_passant_target': game_state['en_passant_target'],
+        'move_history': list(game_state['move_history']),
+        'selected_piece': None,
+        'valid_moves': []
+    }
+    
+    # Get the piece
+    board = new_state['board']
+    piece = board.get(start_pos, None)
+    
+    if not piece:
+        return new_state
+    
+    # Move the piece
+    board[end_pos] = piece
+    del board[start_pos]
+    
+    # Update king position if the king moved
+    if piece[0] == 'K':
+        if piece[1] == 'white':
+            new_state['white_king_pos'] = end_pos
+        else:
+            new_state['black_king_pos'] = end_pos
+    
+    return new_state
+
+def get_valid_moves_considering_check(board, game_state, pos):
+    """Get all valid moves for a piece, considering check rules"""
+    piece = get_piece_at(board, pos)
+    if piece is None:
+        return []
+    
+    color = piece[1]
+    
+    # Get all possible moves without considering check
+    all_moves = get_valid_moves(board, game_state, pos)
+    legal_moves = []
+    
+    # Test each move to see if it leaves the king in check
+    for move in all_moves:
+        # Make a hypothetical move
+        new_state = make_hypothetical_move(game_state, pos, move)
+        # Check if this move leaves the king in check
+        if not is_check(new_state['board'], new_state, color):
+            legal_moves.append(move)
+    
+    return legal_moves
