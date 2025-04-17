@@ -207,35 +207,44 @@ def get_king_moves(board, game_state, pos):
     castling_rights = game_state['castling_rights']
     row = pos[0]
     col = pos[1]
+    color = piece[1]
+    opponent_color = 'black' if color == 'white' else 'white'
     
-    # Function to check if squares between king and rook are empty
-    def squares_clear(start_col, end_col):
+    # Kiểm tra xem Vua có đang bị chiếu không
+    if is_square_under_attack(board, game_state, pos, opponent_color):
+        return moves  # Nếu đang bị chiếu, không thể nhập thành
+    
+    # Function to check if squares between king and rook are empty and not under attack
+    def squares_clear_and_safe(start_col, end_col):
         for c in range(min(start_col, end_col) + 1, max(start_col, end_col)):
             if get_piece_at(board, (row, c)) is not None:
                 return False
+            
+            # Kiểm tra các ô mà Vua đi qua có bị tấn công không
+            if c != end_col and is_square_under_attack(board, game_state, (row, c), opponent_color):
+                return False
+                
         return True
     
-    # Check if we're not in check (this will be refined in a later commit)
-    # For now, we'll just proceed with castling logic
-    
-    if piece[1] == 'white':
+    # Check for castling conditions
+    if color == 'white':
         # King-side castling
-        if castling_rights['white_king_side'] and squares_clear(col, 7):
+        if castling_rights['white_king_side'] and squares_clear_and_safe(col, 7):
             if get_piece_at(board, (row, 7)) == ('R', 'white'):
                 moves.append((row, col + 2))  # King's target position
                 
         # Queen-side castling
-        if castling_rights['white_queen_side'] and squares_clear(col, 0):
+        if castling_rights['white_queen_side'] and squares_clear_and_safe(col, 0):
             if get_piece_at(board, (row, 0)) == ('R', 'white'):
                 moves.append((row, col - 2))  # King's target position
     else:
         # King-side castling
-        if castling_rights['black_king_side'] and squares_clear(col, 7):
+        if castling_rights['black_king_side'] and squares_clear_and_safe(col, 7):
             if get_piece_at(board, (row, 7)) == ('R', 'black'):
                 moves.append((row, col + 2))  # King's target position
                 
         # Queen-side castling
-        if castling_rights['black_queen_side'] and squares_clear(col, 0):
+        if castling_rights['black_queen_side'] and squares_clear_and_safe(col, 0):
             if get_piece_at(board, (row, 0)) == ('R', 'black'):
                 moves.append((row, col - 2))  # King's target position
     
