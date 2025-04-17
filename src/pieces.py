@@ -210,45 +210,129 @@ def get_king_moves(board, game_state, pos):
     color = piece[1]
     opponent_color = 'black' if color == 'white' else 'white'
     
-    # Kiểm tra xem Vua có đang bị chiếu không
-    if is_square_under_attack(board, game_state, pos, opponent_color):
-        return moves  # Nếu đang bị chiếu, không thể nhập thành
-    
-    # Function to check if squares between king and rook are empty and not under attack
-    def squares_clear_and_safe(start_col, end_col):
-        for c in range(min(start_col, end_col) + 1, max(start_col, end_col)):
-            if get_piece_at(board, (row, c)) is not None:
-                return False
+    # Chỉ kiểm tra nhập thành nếu được truyền vào đầy đủ thông tin
+    if 'castling_rights' in game_state and 'en_passant_target' in game_state:
+        # Kiểm tra xem Vua có đang bị chiếu không
+        # Sử dụng một phiên bản đơn giản hơn của is_square_under_attack để tránh đệ quy vô tận
+        if not is_king_in_check_simple(board, pos, opponent_color):
+            # Function to check if squares between king and rook are empty and not under attack
+            def squares_clear_and_safe(start_col, end_col):
+                for c in range(min(start_col, end_col) + 1, max(start_col, end_col)):
+                    if get_piece_at(board, (row, c)) is not None:
+                        return False
+                    
+                    # Kiểm tra các ô mà Vua đi qua có bị tấn công không
+                    if not is_king_in_check_simple(board, (row, c), opponent_color):
+                        continue
+                    else:
+                        return False
+                        
+                return True
             
-            # Kiểm tra các ô mà Vua đi qua có bị tấn công không
-            if c != end_col and is_square_under_attack(board, game_state, (row, c), opponent_color):
-                return False
-                
-        return True
-    
-    # Check for castling conditions
-    if color == 'white':
-        # King-side castling
-        if castling_rights['white_king_side'] and squares_clear_and_safe(col, 7):
-            if get_piece_at(board, (row, 7)) == ('R', 'white'):
-                moves.append((row, col + 2))  # King's target position
-                
-        # Queen-side castling
-        if castling_rights['white_queen_side'] and squares_clear_and_safe(col, 0):
-            if get_piece_at(board, (row, 0)) == ('R', 'white'):
-                moves.append((row, col - 2))  # King's target position
-    else:
-        # King-side castling
-        if castling_rights['black_king_side'] and squares_clear_and_safe(col, 7):
-            if get_piece_at(board, (row, 7)) == ('R', 'black'):
-                moves.append((row, col + 2))  # King's target position
-                
-        # Queen-side castling
-        if castling_rights['black_queen_side'] and squares_clear_and_safe(col, 0):
-            if get_piece_at(board, (row, 0)) == ('R', 'black'):
-                moves.append((row, col - 2))  # King's target position
+            # Check for castling conditions
+            if color == 'white':
+                # King-side castling
+                if castling_rights['white_king_side'] and squares_clear_and_safe(col, 7):
+                    if get_piece_at(board, (row, 7)) == ('R', 'white'):
+                        moves.append((row, col + 2))  # King's target position
+                        
+                # Queen-side castling
+                if castling_rights['white_queen_side'] and squares_clear_and_safe(col, 0):
+                    if get_piece_at(board, (row, 0)) == ('R', 'white'):
+                        moves.append((row, col - 2))  # King's target position
+            else:
+                # King-side castling
+                if castling_rights['black_king_side'] and squares_clear_and_safe(col, 7):
+                    if get_piece_at(board, (row, 7)) == ('R', 'black'):
+                        moves.append((row, col + 2))  # King's target position
+                        
+                # Queen-side castling
+                if castling_rights['black_queen_side'] and squares_clear_and_safe(col, 0):
+                    if get_piece_at(board, (row, 0)) == ('R', 'black'):
+                        moves.append((row, col - 2))  # King's target position
     
     return moves
+
+def is_king_in_check_simple(board, king_pos, attacking_color):
+    """
+    Phiên bản đơn giản hơn của is_square_under_attack
+    Kiểm tra xem vua có đang bị chiếu không mà không gọi đệ quy vào get_king_moves
+    """
+    # Kiểm tra tấn công từ các hướng Xe/Hậu (ngang, dọc)
+    for direction in [NORTH, SOUTH, EAST, WEST]:
+        current = king_pos
+        while True:
+            current = add_positions(current, direction)
+            if not is_valid_position(current):
+                break
+                
+            piece = get_piece_at(board, current)
+            if piece is None:
+                continue
+                
+            piece_type, color = piece
+            if color == attacking_color and (piece_type == 'R' or piece_type == 'Q'):
+                return True
+            else:
+                break
+    
+    # Kiểm tra tấn công từ các hướng Tượng/Hậu (chéo)
+    for direction in [NORTH_EAST, NORTH_WEST, SOUTH_EAST, SOUTH_WEST]:
+        current = king_pos
+        while True:
+            current = add_positions(current, direction)
+            if not is_valid_position(current):
+                break
+                
+            piece = get_piece_at(board, current)
+            if piece is None:
+                continue
+                
+            piece_type, color = piece
+            if color == attacking_color and (piece_type == 'B' or piece_type == 'Q'):
+                return True
+            else:
+                break
+    
+    # Kiểm tra tấn công từ Mã
+    for offset in KNIGHT_MOVES:
+        current = add_positions(king_pos, offset)
+        if not is_valid_position(current):
+            continue
+            
+        piece = get_piece_at(board, current)
+        if piece is not None:
+            piece_type, color = piece
+            if color == attacking_color and piece_type == 'N':
+                return True
+    
+    # Kiểm tra tấn công từ Tốt
+    row, col = king_pos
+    pawn_row_offset = 1 if attacking_color == 'white' else -1
+    for c_offset in [-1, 1]:
+        pawn_pos = (row + pawn_row_offset, col + c_offset)
+        if not is_valid_position(pawn_pos):
+            continue
+            
+        piece = get_piece_at(board, pawn_pos)
+        if piece is not None:
+            piece_type, color = piece
+            if color == attacking_color and piece_type == 'P':
+                return True
+    
+    # Kiểm tra tấn công từ Vua đối phương (cho các trường hợp đặc biệt)
+    for direction in [NORTH, SOUTH, EAST, WEST, NORTH_EAST, NORTH_WEST, SOUTH_EAST, SOUTH_WEST]:
+        current = add_positions(king_pos, direction)
+        if not is_valid_position(current):
+            continue
+            
+        piece = get_piece_at(board, current)
+        if piece is not None:
+            piece_type, color = piece
+            if color == attacking_color and piece_type == 'K':
+                return True
+    
+    return False
 
 def get_valid_moves(board, game_state, pos):
     """Get all valid moves for a piece at the given position"""
@@ -275,6 +359,13 @@ def get_valid_moves(board, game_state, pos):
 
 def is_square_under_attack(board, game_state, square, attacking_color):
     """Check if a square is under attack by a piece of the given color"""
+    row, col = square
+    
+    # Kiểm tra vị trí của vua để tránh đệ quy vô tận
+    king_pos = game_state.get('white_king_pos' if attacking_color == 'black' else 'black_king_pos')
+    if square == king_pos:
+        return is_king_in_check_simple(board, square, attacking_color)
+    
     for pos, piece in board.items():
         piece_type, color = piece
         if color == attacking_color:
@@ -282,9 +373,9 @@ def is_square_under_attack(board, game_state, square, attacking_color):
             moves = []
             if piece_type == 'P':
                 # Special case for pawns - they can attack diagonally
-                row, col = pos
+                p_row, p_col = pos
                 direction = -1 if color == 'white' else 1
-                attacks = [(row + direction, col - 1), (row + direction, col + 1)]
+                attacks = [(p_row + direction, p_col - 1), (p_row + direction, p_col + 1)]
                 moves = [attack for attack in attacks if is_valid_position(attack)]
             else:
                 # For other pieces, use the normal move generation
@@ -292,7 +383,18 @@ def is_square_under_attack(board, game_state, square, attacking_color):
                 simple_state = {'castling_rights': game_state['castling_rights'],
                                'en_passant_target': game_state['en_passant_target']}
                 if piece_type == 'K':
-                    moves = get_king_moves(board, simple_state, pos)
+                    # For king, just use basic moves without castling
+                    moves = []
+                    king_row, king_col = pos
+                    for dr in [-1, 0, 1]:
+                        for dc in [-1, 0, 1]:
+                            if dr == 0 and dc == 0:
+                                continue
+                            target = (king_row + dr, king_col + dc)
+                            if is_valid_position(target):
+                                target_piece = get_piece_at(board, target)
+                                if target_piece is None or is_opponent(piece, target_piece):
+                                    moves.append(target)
                 elif piece_type == 'Q':
                     moves = get_queen_moves(board, pos)
                 elif piece_type == 'R':

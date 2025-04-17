@@ -149,7 +149,60 @@ def move_piece(game_state, start_pos, end_pos):
             # Set en passant target to the square the pawn skipped
             game_state['en_passant_target'] = (start_row + (1 if color == 'black' else -1), start_col)
     
-    # ... [Phần còn lại của hàm không thay đổi] ...
+    # Check for castling
+    elif piece_type == 'K' and abs(start_col - end_col) == 2:
+        # This is a castling move
+        new_board[end_pos] = piece
+        
+        # Also move the rook
+        if end_col > start_col:  # King-side castling
+            rook_start = (start_row, 7)
+            rook_end = (start_row, 5)
+        else:  # Queen-side castling
+            rook_start = (start_row, 0)
+            rook_end = (start_row, 3)
+        
+        rook = new_board.get(rook_start)
+        if rook:
+            new_board[rook_end] = rook
+            del new_board[rook_start]
+            
+        # Update castling rights
+        if color == 'white':
+            game_state['castling_rights']['white_king_side'] = False
+            game_state['castling_rights']['white_queen_side'] = False
+        else:
+            game_state['castling_rights']['black_king_side'] = False
+            game_state['castling_rights']['black_queen_side'] = False
+    else:
+        # Regular move
+        new_board[end_pos] = piece
+        
+    # Update castling rights if king or rook moves
+    if piece_type == 'K':
+        if color == 'white':
+            game_state['castling_rights']['white_king_side'] = False
+            game_state['castling_rights']['white_queen_side'] = False
+            game_state['white_king_pos'] = end_pos
+        else:
+            game_state['castling_rights']['black_king_side'] = False
+            game_state['castling_rights']['black_queen_side'] = False
+            game_state['black_king_pos'] = end_pos
+    elif piece_type == 'R':
+        if color == 'white':
+            if start_pos == (7, 0):  # Queen-side rook
+                game_state['castling_rights']['white_queen_side'] = False
+            elif start_pos == (7, 7):  # King-side rook
+                game_state['castling_rights']['white_king_side'] = False
+        else:
+            if start_pos == (0, 0):  # Queen-side rook
+                game_state['castling_rights']['black_queen_side'] = False
+            elif start_pos == (0, 7):  # King-side rook
+                game_state['castling_rights']['black_king_side'] = False
+    
+    # Remove the piece from its starting position
+    if start_pos in new_board:
+        del new_board[start_pos]
     
     # Update the board
     game_state['board'] = new_board

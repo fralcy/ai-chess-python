@@ -4,7 +4,7 @@ Game management using logical programming approach
 
 import pygame
 import time
-from src.constants import FPS, WIDTH, HEIGHT, BLACK, WHITE, SQUARE_SIZE
+from src.constants import DARK_SQUARE, FPS, HEADER_HEIGHT, HIGHLIGHT, LIGHT_SQUARE, MOVE_HIGHLIGHT, WIDTH, HEIGHT, BLACK, WHITE, SQUARE_SIZE
 from src.board import create_game_state, draw_board, select_piece, move_piece
 from src.ai import find_best_move
 from src.pieces import is_check, is_checkmate, is_stalemate
@@ -210,29 +210,33 @@ class Game:
     def draw_game_header(self):
         """Draw the game header showing current turn and status"""
         # Create header background
-        header_height = 50
+        header_height = HEADER_HEIGHT
         header_rect = pygame.Rect(0, 0, WIDTH, header_height)
         pygame.draw.rect(self.screen, WHITE, header_rect)
         pygame.draw.line(self.screen, BLACK, (0, header_height), (WIDTH, header_height), 2)
         
-        # Show current turn
-        font = pygame.font.SysFont('Arial', 24)
-        turn_text = f"Turn: {self.game_state['turn'].capitalize()}"
-        turn_surface = font.render(turn_text, True, BLACK)
-        self.screen.blit(turn_surface, (20, 15))
+        # Chia header thành 3 phần
+        font = pygame.font.SysFont('Arial', 20)
         
-        # Show check status
-        if is_check(self.game_state['board'], self.game_state, self.game_state['turn']):
-            check_text = "CHECK!"
+        # 1. Bên trái: Hiển thị "You're playing as white/black"
+        player_text = f"You're playing as {self.player_color}"
+        player_surface = font.render(player_text, True, BLACK)
+        self.screen.blit(player_surface, (20, 15))
+        
+        # 2. Ở giữa: Kiểm tra và hiển thị "White/Black is in check" nếu có
+        if self.game_state and is_check(self.game_state['board'], self.game_state, self.game_state['turn']):
+            current_color = self.game_state['turn'].capitalize()
+            check_text = f"{current_color} is in check!"
             check_surface = font.render(check_text, True, (255, 0, 0))
-            self.screen.blit(check_surface, (WIDTH - 100, 15))
+            check_rect = check_surface.get_rect(center=(WIDTH // 2, header_height // 2))
+            self.screen.blit(check_surface, check_rect)
         
-        # Draw pause button
+        # 3. Bên phải: Nút tạm dừng (pause button)
         pause_btn = pygame.Rect(WIDTH - 50, 10, 30, 30)
         pygame.draw.rect(self.screen, (200, 200, 200), pause_btn)
         pygame.draw.rect(self.screen, BLACK, pause_btn, 2)
         
-        # Draw pause icon
+        # Vẽ biểu tượng tạm dừng (hai vạch dọc)
         pygame.draw.rect(self.screen, BLACK, (WIDTH - 45, 15, 8, 20))
         pygame.draw.rect(self.screen, BLACK, (WIDTH - 33, 15, 8, 20))
         
@@ -272,23 +276,12 @@ class Game:
             pause_btn = self.draw_game_header()
             
             # Offset the board to account for header
-            # Draw the board with an offset
-            offset_y = 50  # Header height
+            offset_y = HEADER_HEIGHT
             
-            # Save original surface
-            original_surf = self.screen.copy()
-            
-            # Create a subsurface for the board area
-            board_rect = pygame.Rect(0, offset_y, WIDTH, HEIGHT - offset_y)
-            # Draw board
-            self.screen.fill(BLACK, board_rect)
-            
-            # We need to adjust the drawing of the board
-            # This is a temporary solution - ideally the draw_board function
-            # should accept an offset parameter
+            # Draw the chess board with offset
             for row in range(8):
                 for col in range(8):
-                    color = (240, 217, 181) if (row + col) % 2 == 0 else (181, 136, 99)
+                    color = LIGHT_SQUARE if (row + col) % 2 == 0 else DARK_SQUARE
                     pygame.draw.rect(
                         self.screen, 
                         color, 
@@ -300,22 +293,22 @@ class Game:
                         )
                     )
             
-                # Draw pieces
-                board = self.game_state['board']
-                for pos, piece in board.items():
-                    row, col = pos
-                    piece_type, color = piece
-                    
-                    # Get piece image
-                    piece_img = load_piece_image(piece_type, color)
-                    
-                    # Calculate position
-                    piece_rect = piece_img.get_rect(
-                        center=(col * SQUARE_SIZE + SQUARE_SIZE // 2, 
-                                row * SQUARE_SIZE + SQUARE_SIZE // 2 + offset_y))
-                    
-                    # Draw piece
-                    self.screen.blit(piece_img, piece_rect)
+            # Draw pieces
+            board = self.game_state['board']
+            for pos, piece in board.items():
+                row, col = pos
+                piece_type, color = piece
+                
+                # Get piece image
+                piece_img = load_piece_image(piece_type, color)
+                
+                # Calculate position
+                piece_rect = piece_img.get_rect(
+                    center=(col * SQUARE_SIZE + SQUARE_SIZE // 2, 
+                            row * SQUARE_SIZE + SQUARE_SIZE // 2 + offset_y))
+                
+                # Draw piece
+                self.screen.blit(piece_img, piece_rect)
                 
             # Highlight selected piece
             selected = self.game_state['selected_piece']
@@ -328,7 +321,7 @@ class Game:
                     SQUARE_SIZE
                 )
                 highlight_surface = pygame.Surface((SQUARE_SIZE, SQUARE_SIZE), pygame.SRCALPHA)
-                highlight_surface.fill((247, 247, 105, 150))
+                highlight_surface.fill(HIGHLIGHT)
                 self.screen.blit(highlight_surface, highlight_rect)
                 
             # Highlight valid moves
@@ -342,26 +335,8 @@ class Game:
                     SQUARE_SIZE
                 )
                 move_surface = pygame.Surface((SQUARE_SIZE, SQUARE_SIZE), pygame.SRCALPHA)
-                move_surface.fill((106, 168, 79, 150))
+                move_surface.fill(MOVE_HIGHLIGHT)
                 self.screen.blit(move_surface, move_rect)
-                
-            # Show game status
-            font = pygame.font.SysFont('Arial', 24)
-            status_text = None
-            current_color = self.game_state['turn']
-            
-            if is_checkmate(board, self.game_state, current_color):
-                winner = 'Black' if current_color == 'white' else 'White'
-                status_text = f"{winner} wins by checkmate!"
-            elif is_stalemate(board, self.game_state, current_color):
-                status_text = "Game drawn by stalemate!"
-            elif is_check(board, self.game_state, current_color):
-                status_text = f"{current_color.capitalize()} is in check!"
-                
-            if status_text:
-                text_surface = font.render(status_text, True, (255, 0, 0))
-                text_rect = text_surface.get_rect(center=(WIDTH // 2, 25))
-                self.screen.blit(text_surface, text_rect)
         
         # Update display
         pygame.display.flip()
