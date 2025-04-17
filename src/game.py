@@ -9,6 +9,7 @@ from src.board import create_game_state, draw_board, select_piece, move_piece
 from src.ai import find_best_move
 from src.pieces import is_check, is_checkmate, is_stalemate
 from src.menu import MainMenu, PauseMenu, PromotionMenu, GameOverMenu
+from src.assets import load_piece_image
 
 class Game:
     """Main game class to manage the chess game"""
@@ -278,21 +279,22 @@ class Game:
                         )
                     )
             
-            # Draw pieces
-            board = self.game_state['board']
-            for pos, piece in board.items():
-                row, col = pos
-                piece_type, color = piece
-                
-                # Simple representation of pieces
-                font = pygame.font.SysFont('Arial', 36)
-                text_color = (255, 255, 255) if color == 'black' else (0, 0, 0)
-                text = font.render(piece_type, True, text_color)
-                
-                # Center the text in the square
-                text_rect = text.get_rect(center=(col * SQUARE_SIZE + SQUARE_SIZE // 2, 
-                                                 row * SQUARE_SIZE + SQUARE_SIZE // 2 + offset_y))
-                self.screen.blit(text, text_rect)
+                # Draw pieces
+                board = self.game_state['board']
+                for pos, piece in board.items():
+                    row, col = pos
+                    piece_type, color = piece
+                    
+                    # Get piece image
+                    piece_img = load_piece_image(piece_type, color)
+                    
+                    # Calculate position
+                    piece_rect = piece_img.get_rect(
+                        center=(col * SQUARE_SIZE + SQUARE_SIZE // 2, 
+                                row * SQUARE_SIZE + SQUARE_SIZE // 2 + offset_y))
+                    
+                    # Draw piece
+                    self.screen.blit(piece_img, piece_rect)
                 
             # Highlight selected piece
             selected = self.game_state['selected_piece']
