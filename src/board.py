@@ -290,3 +290,80 @@ def draw_board(screen, game_state):
     elif is_check(board, game_state, current_color):
         text = font.render(f"{current_color.capitalize()} is in check!", True, (255, 0, 0))
         screen.blit(text, (WIDTH // 2 - 100, 20))
+
+def make_hypothetical_move(game_state, start_pos, end_pos):
+    """Make a hypothetical move and return the new game state"""
+    # Create a copy of the game state
+    new_state = {
+        'board': dict(game_state['board']),
+        'turn': game_state['turn'],
+        'white_king_pos': game_state['white_king_pos'],
+        'black_king_pos': game_state['black_king_pos'],
+        'castling_rights': dict(game_state['castling_rights']),
+        'en_passant_target': game_state['en_passant_target'],
+        'move_history': list(game_state['move_history']),
+        'selected_piece': None,
+        'valid_moves': []
+    }
+    
+    # Get the piece
+    board = new_state['board']
+    piece = board.get(start_pos, None)
+    
+    if not piece:
+        return new_state
+    
+    piece_type, color = piece
+    start_row, start_col = start_pos
+    end_row, end_col = end_pos
+    
+    # Handle special moves like en passant, castling, promotion
+    if piece_type == 'P':
+        # En passant capture
+        if abs(start_col - end_col) == 1 and end_pos not in board:
+            # This must be an en passant move
+            capture_pos = (start_row, end_col)
+            if capture_pos in board:
+                del board[capture_pos]
+        
+        # Promotion (automatically to Queen for now)
+        if (color == 'white' and end_row == 0) or (color == 'black' and end_row == 7):
+            board[end_pos] = ('Q', color)
+        else:
+            board[end_pos] = piece
+    
+    # Castling
+    elif piece_type == 'K' and abs(start_col - end_col) == 2:
+        board[end_pos] = piece
+        
+        # Move the rook as well
+        if end_col > start_col:  # King-side
+            rook_start = (start_row, 7)
+            rook_end = (start_row, 5)
+        else:  # Queen-side
+            rook_start = (start_row, 0)
+            rook_end = (start_row, 3)
+            
+        rook = board.get(rook_start)
+        if rook:
+            board[rook_end] = rook
+            del board[rook_start]
+    else:
+        # Regular move
+        board[end_pos] = piece
+    
+    # Remove the piece from its starting position if not already done
+    if start_pos in board:
+        del board[start_pos]
+    
+    # Update king position if the king moved
+    if piece_type == 'K':
+        if color == 'white':
+            new_state['white_king_pos'] = end_pos
+        else:
+            new_state['black_king_pos'] = end_pos
+    
+    # Switch turn
+    new_state['turn'] = 'black' if new_state['turn'] == 'white' else 'white'
+    
+    return new_state
