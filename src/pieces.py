@@ -43,7 +43,7 @@ def add_positions(pos1, pos2):
     """Add two positions"""
     return (pos1[0] + pos2[0], pos1[1] + pos2[1])
 
-def get_pawn_moves(board, pos):
+def get_pawn_moves(board, game_state, pos):
     """Get all valid moves for a pawn at the given position"""
     piece = get_piece_at(board, pos)
     if piece is None or piece[0] != 'P':
@@ -74,7 +74,17 @@ def get_pawn_moves(board, pos):
             if target and is_opponent(piece, target):
                 moves.append(capture_pos)
     
-    # En passant will be added in the next commit
+    # En passant
+    en_passant_target = game_state.get('en_passant_target')
+    if en_passant_target:
+        en_row, en_col = en_passant_target
+        # Check if our pawn is in the right position to capture en passant
+        if (row == en_row and abs(col - en_col) == 1 and 
+            ((piece[1] == 'white' and row == 3) or (piece[1] == 'black' and row == 4))):
+            moves.append((row + direction, en_col))
+    
+    # Note: Promotion is handled in the move_piece function
+    # when a pawn reaches the last rank
     
     return moves
 
@@ -177,7 +187,7 @@ def get_queen_moves(board, pos):
     
     return moves
 
-def get_king_moves(board, pos):
+def get_king_moves(board, game_state, pos):
     """Get all valid moves for a king at the given position"""
     piece = get_piece_at(board, pos)
     if piece is None or piece[0] != 'K':
@@ -193,11 +203,45 @@ def get_king_moves(board, pos):
             if target is None or is_opponent(piece, target):
                 moves.append(target_pos)
     
-    # Castling will be added in a future commit
+    # Castling
+    castling_rights = game_state['castling_rights']
+    row = pos[0]
+    col = pos[1]
+    
+    # Function to check if squares between king and rook are empty
+    def squares_clear(start_col, end_col):
+        for c in range(min(start_col, end_col) + 1, max(start_col, end_col)):
+            if get_piece_at(board, (row, c)) is not None:
+                return False
+        return True
+    
+    # Check if we're not in check (this will be refined in a later commit)
+    # For now, we'll just proceed with castling logic
+    
+    if piece[1] == 'white':
+        # King-side castling
+        if castling_rights['white_king_side'] and squares_clear(col, 7):
+            if get_piece_at(board, (row, 7)) == ('R', 'white'):
+                moves.append((row, col + 2))  # King's target position
+                
+        # Queen-side castling
+        if castling_rights['white_queen_side'] and squares_clear(col, 0):
+            if get_piece_at(board, (row, 0)) == ('R', 'white'):
+                moves.append((row, col - 2))  # King's target position
+    else:
+        # King-side castling
+        if castling_rights['black_king_side'] and squares_clear(col, 7):
+            if get_piece_at(board, (row, 7)) == ('R', 'black'):
+                moves.append((row, col + 2))  # King's target position
+                
+        # Queen-side castling
+        if castling_rights['black_queen_side'] and squares_clear(col, 0):
+            if get_piece_at(board, (row, 0)) == ('R', 'black'):
+                moves.append((row, col - 2))  # King's target position
     
     return moves
 
-def get_valid_moves(board, pos):
+def get_valid_moves(board, game_state, pos):
     """Get all valid moves for a piece at the given position"""
     piece = get_piece_at(board, pos)
     if piece is None:
@@ -206,7 +250,7 @@ def get_valid_moves(board, pos):
     piece_type = piece[0]
     
     if piece_type == 'P':
-        return get_pawn_moves(board, pos)
+        return get_pawn_moves(board, game_state, pos)
     elif piece_type == 'R':
         return get_rook_moves(board, pos)
     elif piece_type == 'N':
@@ -216,6 +260,6 @@ def get_valid_moves(board, pos):
     elif piece_type == 'Q':
         return get_queen_moves(board, pos)
     elif piece_type == 'K':
-        return get_king_moves(board, pos)
+        return get_king_moves(board, game_state, pos)
     
     return []

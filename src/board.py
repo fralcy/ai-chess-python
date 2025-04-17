@@ -77,7 +77,7 @@ def select_piece(game_state, pos):
     # Check if selected position has a piece of the current player's color
     if piece and piece[1] == game_state['turn']:
         game_state['selected_piece'] = pos
-        game_state['valid_moves'] = get_valid_moves(board, pos)
+        game_state['valid_moves'] = get_valid_moves(board, game_state, pos)
     
     return game_state
 
@@ -90,20 +90,111 @@ def move_piece(game_state, start_pos, end_pos):
         return game_state
     
     # Check if the move is valid
-    valid_moves = get_valid_moves(board, start_pos)
+    valid_moves = get_valid_moves(board, game_state, start_pos)
     if end_pos not in valid_moves:
         return game_state
     
-    # Perform the move
-    board[end_pos] = piece
-    del board[start_pos]
+    # Handle special moves
+    piece_type, color = piece
+    start_row, start_col = start_pos
+    end_row, end_col = end_pos
+    
+    # Create a copy of the current board before making changes
+    new_board = dict(board)
+    
+    # Reset en passant target
+    game_state['en_passant_target'] = None
+    
+    # Check for pawn special moves
+    if piece_type == 'P':
+        # Check for en passant capture
+        if abs(start_col - end_col) == 1 and is_empty(board, end_pos):
+            # This must be an en passant move
+            capture_pos = (start_row, end_col)  # The position of the captured pawn
+            if capture_pos in new_board:
+                del new_board[capture_pos]
+        
+        # Check for promotion (reaching the end rank)
+        if (color == 'white' and end_row == 0) or (color == 'black' and end_row == 7):
+            # For now, automatically promote to queen
+            # In a later commit, we'll add UI for choosing the piece
+            new_board[end_pos] = ('Q', color)
+        else:
+            new_board[end_pos] = piece
+            
+        # Check for pawn double move (setting en passant target)
+        if abs(start_row - end_row) == 2:
+            # Set en passant target to the square the pawn skipped
+            game_state['en_passant_target'] = (start_row + (1 if color == 'black' else -1), start_col)
+    
+    # Check for king special moves (castling)
+    elif piece_type == 'K':
+        # King-side castling
+        if start_col + 2 == end_col:
+            # Move the king
+            new_board[end_pos] = piece
+            # Move the rook
+            rook_start = (start_row, 7)
+            rook_end = (start_row, start_col + 1)
+            rook = new_board.get(rook_start)
+            if rook:
+                new_board[rook_end] = rook
+                del new_board[rook_start]
+                
+        # Queen-side castling
+        elif start_col - 2 == end_col:
+            # Move the king
+            new_board[end_pos] = piece
+            # Move the rook
+            rook_start = (start_row, 0)
+            rook_end = (start_row, start_col - 1)
+            rook = new_board.get(rook_start)
+            if rook:
+                new_board[rook_end] = rook
+                del new_board[rook_start]
+        else:
+            # Normal king move
+            new_board[end_pos] = piece
+    else:
+        # Normal piece move
+        new_board[end_pos] = piece
+    
+    # Remove the piece from its starting position
+    if start_pos in new_board:
+        del new_board[start_pos]
+    
+    # Update castling rights
+    castling_rights = game_state['castling_rights']
+    
+    # If king moves, lose all castling rights for that color
+    if piece_type == 'K':
+        if color == 'white':
+            castling_rights['white_king_side'] = False
+            castling_rights['white_queen_side'] = False
+        else:
+            castling_rights['black_king_side'] = False
+            castling_rights['black_queen_side'] = False
+    
+    # If rook moves, lose castling rights for that side
+    elif piece_type == 'R':
+        if start_pos == (7, 0) and color == 'white':
+            castling_rights['white_queen_side'] = False
+        elif start_pos == (7, 7) and color == 'white':
+            castling_rights['white_king_side'] = False
+        elif start_pos == (0, 0) and color == 'black':
+            castling_rights['black_queen_side'] = False
+        elif start_pos == (0, 7) and color == 'black':
+            castling_rights['black_king_side'] = False
     
     # Track king positions
-    if piece[0] == 'K':
-        if piece[1] == 'white':
+    if piece_type == 'K':
+        if color == 'white':
             game_state['white_king_pos'] = end_pos
         else:
             game_state['black_king_pos'] = end_pos
+    
+    # Update the board
+    game_state['board'] = new_board
     
     # Log the move
     game_state['move_history'].append((start_pos, end_pos, piece))
