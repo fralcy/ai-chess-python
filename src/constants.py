@@ -16,6 +16,12 @@ DARK_SQUARE = (181, 136, 99)
 HIGHLIGHT = (247, 247, 105, 150)  # Highlight color for selected piece
 MOVE_HIGHLIGHT = (106, 168, 79, 150)  # Highlight color for possible moves
 
+# UI Colors
+SELECTED_COLOR = (106, 168, 79)  # Màu xanh lá khi được chọn/active
+BTN_COLOR = (240, 240, 240)  # Màu nút cơ bản (xám nhạt)
+BTN_HOVER_COLOR = (220, 220, 220)  # Màu nút khi hover
+OVERLAY_COLOR = (0, 0, 0, 180)  # Màu overlay (đen mờ)
+
 # Header settings
 HEADER_HEIGHT = 50
 
