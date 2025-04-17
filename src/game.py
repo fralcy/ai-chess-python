@@ -3,6 +3,7 @@ Game management using logical programming approach
 """
 
 import pygame
+import time
 from src.constants import FPS, WIDTH, HEIGHT, BLACK, SQUARE_SIZE
 from src.board import create_game_state, draw_board, select_piece, move_piece
 from src.ai import find_best_move
@@ -18,6 +19,7 @@ class Game:
         self.game_state = create_game_state()
         self.player_color = 'white'  # Người chơi mặc định là bên trắng
         self.ai_thinking = False
+        self.ai_difficulty = 3  # Độ sâu tìm kiếm (1: dễ, 3: trung bình, 5: khó)
         
     def handle_mouse_click(self, pos):
         """Handle mouse click event"""
@@ -49,10 +51,16 @@ class Game:
     def make_ai_move(self):
         """Let the AI make a move"""
         if self.ai_thinking and self.game_state['turn'] != self.player_color:
-            best_move = find_best_move(self.game_state)
+            # Thêm độ trễ nhỏ để tạo cảm giác AI đang "suy nghĩ"
+            time.sleep(0.5)
+            
+            # Tìm nước đi tốt nhất theo độ khó
+            best_move = find_best_move(self.game_state, self.ai_difficulty)
+            
             if best_move:
                 start, end = best_move
                 self.game_state = move_piece(self.game_state, start, end)
+            
             self.ai_thinking = False
         
     def run(self):
@@ -68,15 +76,3 @@ class Game:
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     mouse_pos = pygame.mouse.get_pos()
                     self.handle_mouse_click(mouse_pos)
-            
-            # AI's turn
-            self.make_ai_move()
-            
-            # Draw background
-            self.screen.fill(BLACK)
-            
-            # Draw the board
-            draw_board(self.screen, self.game_state)
-            
-            # Update the display
-            pygame.display.flip()
