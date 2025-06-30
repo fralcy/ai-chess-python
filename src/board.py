@@ -18,17 +18,31 @@ def create_board():
     
     board = {}
     
-    # Tốt trắng sắp phong cấp
-    board[(1, 2)] = ('P', 'white')  # Tốt trắng ở hàng 2 (sẽ lên hàng 1)
+    # Khởi tạo quân trắng
+    for col in range(BOARD_SIZE):
+        board[(6, col)] = ('P', 'white')  # Các quân tốt
     
-    # Vua (bắt buộc phải có)
+    board[(7, 0)] = ('R', 'white')  # Xe trắng
+    board[(7, 7)] = ('R', 'white')
+    board[(7, 1)] = ('N', 'white')  # Mã trắng
+    board[(7, 6)] = ('N', 'white')
+    board[(7, 2)] = ('B', 'white')  # Tượng trắng
+    board[(7, 5)] = ('B', 'white')
+    board[(7, 3)] = ('Q', 'white')  # Hậu trắng
     board[(7, 4)] = ('K', 'white')  # Vua trắng
-    board[(0, 4)] = ('K', 'black')  # Vua đen
     
-    # Thêm ít quân khác
-    board[(6, 0)] = ('P', 'white')  # Tốt trắng khác
-    board[(1, 0)] = ('P', 'black')  # Tốt đen
-    board[(1, 7)] = ('P', 'black')  # Tốt đen
+    # Khởi tạo quân đen
+    for col in range(BOARD_SIZE):
+        board[(1, col)] = ('P', 'black')  # Các quân tốt
+    
+    board[(0, 0)] = ('R', 'black')  # Xe đen
+    board[(0, 7)] = ('R', 'black')
+    board[(0, 1)] = ('N', 'black')  # Mã đen
+    board[(0, 6)] = ('N', 'black')
+    board[(0, 2)] = ('B', 'black')  # Tượng đen
+    board[(0, 5)] = ('B', 'black')
+    board[(0, 3)] = ('Q', 'black')  # Hậu đen
+    board[(0, 4)] = ('K', 'black')  # Vua đen
     
     return board
 

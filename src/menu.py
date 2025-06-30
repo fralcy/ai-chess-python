@@ -325,7 +325,7 @@ class PromotionMenu:
         self.options = ['Q', 'R', 'B', 'N']
         self.buttons = []
         
-        button_size = 60
+        button_size = 80
         start_x = WIDTH // 2 - (button_size * 2)
         y = HEIGHT // 2 - button_size // 2
         
@@ -353,27 +353,27 @@ class PromotionMenu:
     
     def draw(self):
         """Draw the promotion menu overlay"""
-        # Lưu bản sao của màn hình hiện tại
-        current_screen = self.screen.copy()
+        # FILL TOÀN BỘ MÀN HÌNH với màu nền
+        self.screen.fill(self.primary_color)
         
         # Tạo overlay đen mờ toàn màn hình
         overlay = pygame.Surface((WIDTH, HEIGHT))
         overlay.fill((0, 0, 0))  # Màu đen
-        overlay.set_alpha(180)  # Đặt độ mờ
+        overlay.set_alpha(120)  # Đặt độ mờ nhẹ hơn
         self.screen.blit(overlay, (0, 0))
         
-        # Draw promotion menu background
-        menu_width = 250
-        menu_height = 150
+        # Draw promotion menu background - làm to hơn
+        menu_width = 400
+        menu_height = 200
         menu_rect = pygame.Rect(WIDTH // 2 - menu_width // 2, HEIGHT // 2 - menu_height // 2,
                               menu_width, menu_height)
         pygame.draw.rect(self.screen, self.primary_color, menu_rect)
         pygame.draw.rect(self.screen, BLACK, menu_rect, 3)
         
         # Draw title
-        font = pygame.font.SysFont('Arial', 24)
+        font = pygame.font.SysFont('Arial', 32)
         title = font.render("Choose promotion piece:", True, BLACK)
-        title_rect = title.get_rect(center=(WIDTH // 2, HEIGHT // 2 - 50))
+        title_rect = title.get_rect(center=(WIDTH // 2, HEIGHT // 2 - 60))
         self.screen.blit(title, title_rect)
         
         # Draw buttons
@@ -384,8 +384,6 @@ class PromotionMenu:
     
     def run(self):
         """Run the promotion menu loop"""
-        self.draw()
-        
         while self.running:
             self.clock.tick(FPS)
             event_result = self.handle_events()
@@ -414,11 +412,17 @@ class GameOverMenu:
         self.selected_color = SELECTED_COLOR  # Màu khi được chọn (xanh lá)
         self.overlay_color = OVERLAY_COLOR  # Màu overlay (đen mờ)
         
-        # Create buttons
+        # Container dimensions
+        self.container_width = 500
+        self.container_height = 400
+        self.container_x = WIDTH // 2 - self.container_width // 2
+        self.container_y = HEIGHT // 2 - self.container_height // 2
+        
+        # Create buttons - CENTER THEO CONTAINER
         btn_width, btn_height = 200, 50
         btn_margin = 15
-        center_x = WIDTH // 2 - btn_width // 2
-        start_y = HEIGHT // 2 + 50
+        center_x = self.container_x + self.container_width // 2 - btn_width // 2  # CENTER của container
+        start_y = self.container_y + 220  # Offset từ top của container
         
         self.play_again_btn = Button("Play Again", center_x, start_y, btn_width, btn_height,
                                    self.btn_color, self.selected_color)
@@ -451,50 +455,52 @@ class GameOverMenu:
     
     def draw(self):
         """Draw the game over menu overlay"""
-        # Lưu bản sao của màn hình hiện tại
-        current_screen = self.screen.copy()
+        # FILL TOÀN BỘ MÀN HÌNH với màu nền
+        self.screen.fill(self.primary_color)
         
         # Tạo overlay đen mờ toàn màn hình
         overlay = pygame.Surface((WIDTH, HEIGHT))
         overlay.fill((0, 0, 0))  # Màu đen
-        overlay.set_alpha(180)  # Đặt độ mờ
+        overlay.set_alpha(120)  # Đặt độ mờ nhẹ hơn
         self.screen.blit(overlay, (0, 0))
         
-        # Draw game over menu background
-        container_width = 400
-        container_height = 350
-        container_x = WIDTH // 2 - container_width // 2
-        container_y = HEIGHT // 2 - container_height // 2
-        
-        container_rect = pygame.Rect(container_x, container_y, container_width, container_height)
+        # Draw game over menu background - sử dụng container dimensions đã định nghĩa
+        container_rect = pygame.Rect(self.container_x, self.container_y, self.container_width, self.container_height)
         pygame.draw.rect(self.screen, self.primary_color, container_rect)
         pygame.draw.rect(self.screen, BLACK, container_rect, 3)
         
-        # Draw title
+        # Draw title - CENTER theo container
         font = pygame.font.SysFont('Arial', 48)
         title = font.render("Game Over", True, BLACK)
-        title_rect = title.get_rect(center=(WIDTH // 2, container_y + 60))
+        title_rect = title.get_rect(center=(self.container_x + self.container_width // 2, self.container_y + 80))
         self.screen.blit(title, title_rect)
         
-        # Draw result
-        font = pygame.font.SysFont('Arial', 36)
+        # Draw result - CENTER theo container
+        font = pygame.font.SysFont('Arial', 28)
         if self.result == 'white_wins':
             result_text = "White Wins!"
+            result_color = BLACK
         elif self.result == 'black_wins':
             result_text = "Black Wins!"
+            result_color = BLACK
         elif self.result == 'draw_stalemate':
             result_text = "Draw by Stalemate"
+            result_color = (100, 100, 100)
         elif self.result == 'draw_insufficient':
             result_text = "Draw by Insufficient Material"
+            result_color = (100, 100, 100)
         elif self.result == 'draw_repetition':
             result_text = "Draw by Threefold Repetition"
+            result_color = (100, 100, 100)
         elif self.result == 'draw_fifty_move':
             result_text = "Draw by Fifty-Move Rule"
+            result_color = (100, 100, 100)
         else:
             result_text = "Draw!"
+            result_color = (100, 100, 100)
         
-        result = font.render(result_text, True, BLACK)
-        result_rect = result.get_rect(center=(WIDTH // 2, container_y + 120))
+        result = font.render(result_text, True, result_color)
+        result_rect = result.get_rect(center=(self.container_x + self.container_width // 2, self.container_y + 140))
         self.screen.blit(result, result_rect)
         
         # Draw buttons
@@ -506,8 +512,6 @@ class GameOverMenu:
     
     def run(self):
         """Run the game over menu loop"""
-        self.draw()
-        
         while self.running:
             self.clock.tick(FPS)
             event_result = self.handle_events()
