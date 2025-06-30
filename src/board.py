@@ -18,31 +18,17 @@ def create_board():
     
     board = {}
     
-    # Khởi tạo quân trắng
-    for col in range(BOARD_SIZE):
-        board[(6, col)] = ('P', 'white')  # Các quân tốt
+    # Tốt trắng sắp phong cấp
+    board[(1, 2)] = ('P', 'white')  # Tốt trắng ở hàng 2 (sẽ lên hàng 1)
     
-    board[(7, 0)] = ('R', 'white')  # Xe trắng
-    board[(7, 7)] = ('R', 'white')
-    board[(7, 1)] = ('N', 'white')  # Mã trắng
-    board[(7, 6)] = ('N', 'white')
-    board[(7, 2)] = ('B', 'white')  # Tượng trắng
-    board[(7, 5)] = ('B', 'white')
-    board[(7, 3)] = ('Q', 'white')  # Hậu trắng
+    # Vua (bắt buộc phải có)
     board[(7, 4)] = ('K', 'white')  # Vua trắng
-    
-    # Khởi tạo quân đen
-    for col in range(BOARD_SIZE):
-        board[(1, col)] = ('P', 'black')  # Các quân tốt
-    
-    board[(0, 0)] = ('R', 'black')  # Xe đen
-    board[(0, 7)] = ('R', 'black')
-    board[(0, 1)] = ('N', 'black')  # Mã đen
-    board[(0, 6)] = ('N', 'black')
-    board[(0, 2)] = ('B', 'black')  # Tượng đen
-    board[(0, 5)] = ('B', 'black')
-    board[(0, 3)] = ('Q', 'black')  # Hậu đen
     board[(0, 4)] = ('K', 'black')  # Vua đen
+    
+    # Thêm ít quân khác
+    board[(6, 0)] = ('P', 'white')  # Tốt trắng khác
+    board[(1, 0)] = ('P', 'black')  # Tốt đen
+    board[(1, 7)] = ('P', 'black')  # Tốt đen
     
     return board
 
@@ -90,8 +76,8 @@ def select_piece(game_state, pos):
     
     return game_state
 
-def move_piece(game_state, start_pos, end_pos):
-    """Move a piece from start position to end position"""
+def move_piece(game_state, start_pos, end_pos, promotion_piece='Q'):
+    """Move a piece from start position to end position with optional promotion piece"""
     board = game_state['board']
     piece = board.get(start_pos, None)
     
@@ -111,7 +97,7 @@ def move_piece(game_state, start_pos, end_pos):
     # Create a copy of the current board before making changes
     new_board = dict(board)
     
-    # Reset en passant target
+    # QUAN TRỌNG: Xóa en passant target cũ trước khi xử lý nước đi mới
     game_state['en_passant_target'] = None
     
     # Check if this move resets the halfmove clock (capture or pawn move)
@@ -129,22 +115,26 @@ def move_piece(game_state, start_pos, end_pos):
     
     # Check for pawn special moves
     if piece_type == 'P':
+        # XÓA TỐT Ở VỊ TRÍ CŨ NGAY ĐẦU (quan trọng!)
+        if start_pos in new_board:
+            del new_board[start_pos]
+            
         # Check for en passant capture
         if abs(start_col - end_col) == 1 and is_empty(board, end_pos):
-            # This must be an en passant move
+            # This must be an en passant move - xóa tốt bị bắt
             capture_pos = (start_row, end_col)  # The position of the captured pawn
             if capture_pos in new_board:
                 del new_board[capture_pos]
         
         # Check for promotion (reaching the end rank)
         if (color == 'white' and end_row == 0) or (color == 'black' and end_row == 7):
-            # For now, automatically promote to queen
-            # In a later commit, we'll add UI for choosing the piece
-            new_board[end_pos] = ('Q', color)
+            # PROMOTION: Sử dụng promotion_piece parameter
+            new_board[end_pos] = (promotion_piece, color)
         else:
+            # Normal pawn move (đã xóa tốt cũ ở trên)
             new_board[end_pos] = piece
             
-        # Check for pawn double move (setting en passant target)
+        # FIX: Chỉ đặt en passant target khi tốt đi 2 bước
         if abs(start_row - end_row) == 2:
             # Set en passant target to the square the pawn skipped
             game_state['en_passant_target'] = (start_row + (1 if color == 'black' else -1), start_col)
@@ -152,6 +142,11 @@ def move_piece(game_state, start_pos, end_pos):
     # Check for castling
     elif piece_type == 'K' and abs(start_col - end_col) == 2:
         # This is a castling move
+        # XÓA VUA Ở VỊ TRÍ CŨ TRƯỚC
+        if start_pos in new_board:
+            del new_board[start_pos]
+            
+        # Đặt vua ở vị trí mới
         new_board[end_pos] = piece
         
         # Also move the rook
@@ -175,7 +170,11 @@ def move_piece(game_state, start_pos, end_pos):
             game_state['castling_rights']['black_king_side'] = False
             game_state['castling_rights']['black_queen_side'] = False
     else:
-        # Regular move
+        # Regular move for all other pieces
+        # XÓA QUÂN Ở VỊ TRÍ CŨ TRƯỚC
+        if start_pos in new_board:
+            del new_board[start_pos]
+        # Đặt quân ở vị trí mới
         new_board[end_pos] = piece
         
     # Update castling rights if king or rook moves
@@ -199,10 +198,6 @@ def move_piece(game_state, start_pos, end_pos):
                 game_state['castling_rights']['black_queen_side'] = False
             elif start_pos == (0, 7):  # King-side rook
                 game_state['castling_rights']['black_king_side'] = False
-    
-    # Remove the piece from its starting position
-    if start_pos in new_board:
-        del new_board[start_pos]
     
     # Update the board
     game_state['board'] = new_board

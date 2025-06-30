@@ -74,17 +74,16 @@ def get_pawn_moves(board, game_state, pos):
             if target and is_opponent(piece, target):
                 moves.append(capture_pos)
     
-    # En passant
+    # FIX: En passant với logic đúng
     en_passant_target = game_state.get('en_passant_target')
     if en_passant_target:
         en_row, en_col = en_passant_target
-        # Check if our pawn is in the right position to capture en passant
-        if (row == en_row and abs(col - en_col) == 1 and 
-            ((piece[1] == 'white' and row == 3) or (piece[1] == 'black' and row == 4))):
+        # Kiểm tra tốt có ở đúng hàng để có thể bắt en passant không
+        # Tốt trắng phải ở hàng 3, tốt đen phải ở hàng 4
+        if ((piece[1] == 'white' and row == 3) or (piece[1] == 'black' and row == 4)) and \
+           abs(col - en_col) == 1:
+            # Thêm nước bắt tốt qua đường
             moves.append((row + direction, en_col))
-    
-    # Note: Promotion is handled in the move_piece function
-    # when a pawn reaches the last rank
     
     return moves
 
@@ -483,16 +482,63 @@ def make_hypothetical_move(game_state, start_pos, end_pos):
     if not piece:
         return new_state
     
-    # Move the piece
-    board[end_pos] = piece
-    del board[start_pos]
+    piece_type, color = piece
+    start_row, start_col = start_pos
+    end_row, end_col = end_pos
+    
+    # Handle special moves like en passant, castling, promotion
+    if piece_type == 'P':
+        # En passant capture
+        if abs(start_col - end_col) == 1 and end_pos not in board:
+            # This must be an en passant move
+            capture_pos = (start_row, end_col)
+            if capture_pos in board:
+                del board[capture_pos]
+        
+        # Promotion (automatically to Queen for now)
+        if (color == 'white' and end_row == 0) or (color == 'black' and end_row == 7):
+            board[end_pos] = ('Q', color)
+            # Remove pawn from its starting position
+            if start_pos in board:
+                del board[start_pos]
+        else:
+            board[end_pos] = piece
+            if start_pos in board:
+                del board[start_pos]
+    
+    # Castling
+    elif piece_type == 'K' and abs(start_col - end_col) == 2:
+        board[end_pos] = piece
+        
+        # Move the rook as well
+        if end_col > start_col:  # King-side
+            rook_start = (start_row, 7)
+            rook_end = (start_row, 5)
+        else:  # Queen-side
+            rook_start = (start_row, 0)
+            rook_end = (start_row, 3)
+            
+        rook = board.get(rook_start)
+        if rook:
+            board[rook_end] = rook
+            del board[rook_start]
+        if start_pos in board:
+            del board[start_pos]
+    else:
+        # Regular move
+        board[end_pos] = piece
+        if start_pos in board:
+            del board[start_pos]
     
     # Update king position if the king moved
-    if piece[0] == 'K':
-        if piece[1] == 'white':
+    if piece_type == 'K':
+        if color == 'white':
             new_state['white_king_pos'] = end_pos
         else:
             new_state['black_king_pos'] = end_pos
+    
+    # Switch turn
+    new_state['turn'] = 'black' if new_state['turn'] == 'white' else 'white'
     
     return new_state
 

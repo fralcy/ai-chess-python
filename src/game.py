@@ -22,6 +22,7 @@ class Game:
         self.game_active = False
         self.game_over = False
         self.promotion_pending = False
+        self.pending_move = None  # Store move waiting for promotion
         
         # Game state will be created when game starts
         self.game_state = None
@@ -52,6 +53,7 @@ class Game:
         self.game_active = True
         self.game_over = False
         self.promotion_pending = False
+        self.pending_move = None
         
         # If player is black, let AI make the first move
         if self.player_color == 'black':
@@ -80,9 +82,22 @@ class Game:
         if result['action'] == 'quit':
             self.running = False
         elif result['action'] == 'promote':
-            # Update the pawn to the selected piece
-            row, col = position
-            self.game_state['board'][position] = (result['piece'], color)
+            # THỰC HIỆN NƯỚC ĐI VỚI PROMOTION PIECE
+            start_pos, end_pos = self.pending_move
+            selected_piece = result['piece']
+            
+            # Gọi move_piece với promotion piece
+            self.game_state = move_piece(self.game_state, start_pos, end_pos, selected_piece)
+            
+            # Clear pending move
+            self.pending_move = None
+            
+            # Check for game over after promotion
+            self.check_game_over()
+            
+            # If game continues, let AI think  
+            if not self.game_over:
+                self.ai_thinking = True
     
     def show_game_over_menu(self, result):
         """Show the game over menu"""
@@ -128,7 +143,7 @@ class Game:
                         self.show_promotion_menu(click_pos, piece[1])
                         return
                 
-                # Normal move
+                # Normal move (không promotion)
                 self.game_state = move_piece(self.game_state, selected, click_pos)
                 
                 # After player's move, check for game over conditions
@@ -200,7 +215,18 @@ class Game:
             
             if best_move:
                 start, end = best_move
-                self.game_state = move_piece(self.game_state, start, end)
+                
+                # Check if AI needs to promote (unlikely but possible)
+                piece = self.game_state['board'].get(start)
+                if piece and piece[0] == 'P':
+                    end_row = end[0]
+                    if (piece[1] == 'white' and end_row == 0) or (piece[1] == 'black' and end_row == 7):
+                        # AI always promotes to Queen
+                        self.game_state = move_piece(self.game_state, start, end, 'Q')
+                    else:
+                        self.game_state = move_piece(self.game_state, start, end)
+                else:
+                    self.game_state = move_piece(self.game_state, start, end)
                 
                 # Check for game over after AI move
                 self.check_game_over()
